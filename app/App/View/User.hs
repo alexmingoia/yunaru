@@ -1,0 +1,155 @@
+{-# LANGUAGE OverloadedStrings #-}
+
+module App.View.User where
+
+import App.Model.Env
+import App.View.Error
+import App.View.Language
+import App.View.Payment
+import Control.Monad.Extra
+import Data.Maybe
+import Data.Text
+import Data.UUID as UUID
+import Text.Blaze.Html ((!), textValue, toHtml)
+import qualified Text.Blaze.Html5 as H
+import qualified Text.Blaze.Html5.Attributes as A
+
+userNewFormHtml env userM emailM passwordM confirmPasswordM errM = do
+  let formActionUrl =
+        case userId <$> userM of
+          Nothing -> appUrl env +> ["users"]
+          Just id -> appUrl env +> ["users", UUID.toText id] ?> [("_method", "PUT")]
+  H.section $ do
+    H.h1 "Create Account"
+    H.p $ do
+      toHtml ("Create an account for " :: Text)
+      H.strong "$33 per year"
+      toHtml (" to save your followings. You'll also be able to subscribe to newsletters and read them in your feed." :: Text)
+    H.p $ toHtml $ toTitle (appName env) <> " is independently owned. There's no tracking, no ads, and your data is kept private."
+    H.hr
+    whenJust errM errorAlertHtml
+    H.form ! A.method "POST" ! A.action (urlValue formActionUrl) ! A.enctype "multipart/form-data" ! A.onsubmit "submitFormAndRedirectToCheckout(event);" $ do
+      H.div ! A.class_ "form-control" $ do
+        H.label ! A.for "email" $ "Email Address"
+        H.input
+          ! A.name "email"
+          ! A.type_ "email"
+          ! A.value (textValue (maybe "" renderEmail emailM))
+          ! A.required mempty
+          ! A.placeholder "you@domain.com"
+          ! A.class_ (errorClass "email" "input" errM)
+        H.p $ H.small "We'll never share your e-mail, or send you spam."
+      H.div ! A.class_ "form-control" $ do
+        H.label ! A.for "password" $ "Password"
+        H.input
+          ! A.name "password"
+          ! A.type_ "password"
+          ! A.required mempty
+          ! A.placeholder "Password"
+          ! A.value (textValue (fromMaybe "" passwordM))
+          ! A.class_ (errorClass "password" "input" errM)
+      H.div ! A.class_ "form-control" $ do
+        H.label ! A.for "password-confirm" $ "Confirm password"
+        H.input
+          ! A.name "password-confirm"
+          ! A.type_ "password"
+          ! A.required mempty
+          ! A.placeholder "Confirm password"
+          ! A.value (textValue (fromMaybe "" confirmPasswordM))
+          ! A.class_ (errorClass "password-confirm" "input" errM)
+      H.div ! A.class_ "form-control" $ do
+        H.button ! A.type_ "submit" $ "Create account"
+
+userEditFormHtml env user pendingEmailM emailM errM = do
+  when (not (userPaid user)) $ paymentIncompleteAlertHtml env
+  H.section $ do
+    H.h1 "Account Settings"
+    whenJust errM errorAlertHtml
+    whenJust pendingEmailM $ \email -> do
+      if isJust (userEmail user)
+        then do
+          H.p ! A.role "alert" $ do
+            H.span "Complete your email address change by clicking the link in the confirmation email sent to "
+            H.strong (toHtml (renderEmail email))
+            H.span "."
+        else do
+          H.p ! A.role "alert" $ do
+            H.span "Confirm your email address by clicking the link in the email sent to "
+            H.strong (toHtml (renderEmail email))
+            H.span ". If it's in your spam folder, help us out by unmarking as spam."
+    let passwordM = userPassword user
+        formActionUrl = appUrl env +> ["users", UUID.toText (userId user)] ?> [("_method", "PUT")]
+    H.form ! A.method "POST" ! A.action (urlValue formActionUrl) ! A.enctype "multipart/form-data" $ do
+      let label = if isJust passwordM then "Change Password" else "Password"
+          placeholder = if isJust passwordM then "New Password" else "Password"
+      H.div ! A.class_ "form-control" $ do
+        H.label ! A.for "email" $ "Email Address"
+        H.input
+          ! A.name "email"
+          ! A.type_ "email"
+          ! A.value (textValue (maybe "" renderEmail emailM))
+          ! A.required mempty
+          ! A.placeholder "you@domain.com"
+          ! A.class_ (errorClass "email" "input" errM)
+        H.p $ H.small "We'll never share your e-mail, or send you spam."
+      H.div ! A.class_ "form-control" $ do
+        H.label ! A.for "password" $ toHtml (label :: Text)
+        H.input
+          ! A.name "password"
+          ! A.type_ "password"
+          ! (if isNothing passwordM then A.required mempty else mempty)
+          ! A.placeholder (textValue placeholder)
+          ! A.class_ (errorClass "password" "input" errM)
+      H.div ! A.class_ "form-control" $ do
+        H.label ! A.for "password-confirm" $ toHtml $ "Confirm " <> label
+        H.input
+          ! A.name "password-confirm"
+          ! A.type_ "password"
+          ! (if isNothing passwordM then A.required mempty else mempty)
+          ! A.placeholder (textValue ("Confirm " <> placeholder))
+          ! A.class_ (errorClass "password-confirm" "input" errM)
+      H.div ! A.class_ "form-control" $ do
+        H.button ! A.type_ "submit" $ "Save"
+  when (userPaid user) (userSubscriptionHtml env user)
+  H.section $ do
+    H.p $ do
+      toHtml ("Questions or problems? Contact " :: Text)
+      H.a
+        ! A.href (textValue ("mailto:" <> renderEmail (appEmail env)))
+        $ toHtml (renderEmail (appEmail env))
+      toHtml ("." :: Text)
+    let uid = UUID.toText (userId user)
+    let formActionUrl = (appUrl env +> ["sessions", uid]) ?> [("_method", "DELETE")]
+    H.form ! A.method "POST" ! A.action (urlValue formActionUrl) $ do
+      H.small $ H.button ! A.class_ "button outline" ! A.type_ "submit" $ "Sign out"
+
+userSubscriptionHtml env user = do
+  let portalUrl = appUrl env +> ["payments", "stripe", "portal"]
+  H.section $ do
+    H.h2 "Subscription"
+    H.p $ do
+      toHtml $ "Thanks for choosing " <> appName env <> "! "
+      case userStatus user of
+        "active" -> do
+          case userCanceledAt user of
+            Nothing -> whenJust (userPaidUntil user) $ \paidUntil -> do
+              toHtml ("Your subscription will automatically renew on " :: Text)
+              timeHtml paidUntil
+              toHtml ("." :: Text)
+            Just canceledAt -> do
+              toHtml ("You canceled your subscription on " :: Text)
+              timeHtml canceledAt
+              whenJust (userPaidUntil user) $ \paidUntil -> do
+                toHtml (", and it will remain active until " :: Text)
+                timeHtml paidUntil
+              toHtml ("." :: Text)
+        "past_due" ->
+          H.p $ do
+            toHtml ("Your subscription is past due. Please " :: Text)
+            H.a ! A.href (urlValue portalUrl) $ "update your payment details"
+            toHtml ("." :: Text)
+        _ -> mempty
+    when (Just (userCreatedAt user) > parseDateTime "2021-05-04") $ do
+      H.p $ H.a ! A.href (urlValue portalUrl) $ "Manage Subscription"
+
+timeHtml t = H.time ! A.datetime (textValue (formatTime8601 t)) $ toHtml $ formatTimeHuman t

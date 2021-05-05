@@ -1,0 +1,15 @@
+*.backup.*
+**DS_Store
+*.log
+.stack-work/
+Setup.hs
+*.cabal
+*~
+*.nix
+.env
+*.pgdump
+node_modules/
+package.json
+package-lock.json
+assets/screen.min.css
+TODO.md

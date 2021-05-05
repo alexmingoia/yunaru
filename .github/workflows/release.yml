@@ -1,0 +1,61 @@
+  name: Deploy
+  on:
+    push:
+      branches:
+        - main
+
+  jobs:
+    build:
+      name: Deploy
+      runs-on: ubuntu-18.04
+      steps:
+        - name: Github actions env workaround
+          run: echo "ACTIONS_ALLOW_UNSECURE_COMMANDS=true" >> $GITHUB_ENV
+
+        - name: Install fftw3
+          run: sudo apt-get install libfftw3-dev
+
+        - name: Setup GHC
+          uses: actions/setup-haskell@v1
+          with:
+            ghc-version: "8.8.2"
+
+        - name: Setup Stack
+          uses: mstksg/setup-stack@v1
+
+        - name: Setup Node.js
+          uses: actions/setup-node@v1
+          with:
+            node-version: 12.x
+
+        - name: Clone project
+          uses: actions/checkout@v2
+
+        - name: Cache dependencies
+          uses: actions/cache@v1
+          with:
+            path: ~/.stack
+            key: ${{ runner.os }}-${{ hashFiles('stack.yaml') }}
+
+        - name: Build application bundle
+          run: |
+            npm i postcss postcss-cli postcss-preset-env cssnano
+            node_modules/postcss-cli/bin/postcss assets/screen.css3.css -u postcss-preset-env -u cssnano --no-map -o assets/screen.min.css
+            stack build --no-terminal --system-ghc
+            mkdir -p bin
+            cp "`stack path --local-install-root`/bin/webserver" ./bin/webserver
+            cp "`stack path --local-install-root`/bin/worker" ./bin/worker
+            zip -x ".*" -x "node_modules/*" -r bundle .
+            
+        - name: Deploy web server
+          env:
+            WEBSERVER_SSH_KEY: ${{ secrets.WEBSERVER_SSH_KEY }}
+            WEBSERVER_IP: ${{ secrets.WEBSERVER_IP }}
+            WEBSERVER_KNOWN_HOSTS: ${{ secrets.WEBSERVER_KNOWN_HOSTS }}
+          run: |
+            mkdir -p ~/.ssh
+            echo "$WEBSERVER_KNOWN_HOSTS" > ~/.ssh/known_hosts
+            echo "$WEBSERVER_SSH_KEY" > webserver.key
+            chmod 600 webserver.key
+            scp -i webserver.key bundle.zip "web@$WEBSERVER_IP:/home/web/bundle.zip"
+            ssh -i webserver.key "web@$WEBSERVER_IP" "source .env; unzip -o bundle.zip; killall -wq webserver; nohup bin/webserver > webserver.log 2> webserver.error.log & killall -wq worker; nohup bin/worker > worker.log 2> worker.error.log &"

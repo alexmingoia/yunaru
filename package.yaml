@@ -1,0 +1,107 @@
+name:                sumi
+version:             0.1.0.0
+github:              "tofukidco/suminews"
+license:             AllRightsReserved
+author:              "Tofu Kid LLC"
+maintainer:          "hello@tofukid.xyz"
+copyright:           "Tofu Kid LLC"
+
+extra-source-files:
+- README.md
+
+# Metadata used when publishing your package
+# synopsis:            Short description of your package
+# category:            web
+
+# To avoid duplicated efforts in documentation and dealing with the
+# complications of embedding Haddock markup inside cabal files, it is
+# common to point users to the README.md file.
+description:         Please see the README on GitHub at <https://github.com/tofukidco/suminews#readme>
+
+dependencies:
+- aeson >= 1.4 && < 1.5
+- amazonka >= 1.6 && < 1.7
+- amazonka-core >= 1.6 && < 1.7
+- amazonka-ses >= 1.6 && < 1.7
+- async >= 2.2 && < 2.3
+- base >= 4.7 && < 5
+- base-encoding >= 0.2 && < 0.3
+- binary >= 0.8 && < 0.9
+- blaze-html >= 0.9 && < 0.10
+- blaze-svg >= 0.3 && < 0.4
+- blaze-markup >= 0.8 && < 0.9
+- bytestring >= 0.10 && < 0.11
+- casing >= 0.1 && < 0.2
+- clock >= 0.8 && < 0.9
+- containers >= 0.6 && < 0.7
+- cookie >= 0.4 && < 0.5
+- cryptonite >= 0.25 && < 0.28
+- data-default >= 0.7 && < 0.8
+- either >= 5.0.1 && < 5.1
+- exceptions >= 0.10 && < 0.11
+- extra >= 1.6 && < 1.7
+- feed >= 1.2 && < 1.4
+- http-client >= 0.6 && < 0.7
+- http-client-tls >= 0.3 && < 0.4
+- http-types >= 0.12 && < 0.13
+- lens >= 4.17 && < 4.18
+- memory >= 0.14 && < 0.16
+- microformats2-parser >= 1.0 && < 1.1
+- modern-uri >= 0.3.1 && < 0.4
+- network-uri >= 2.6.1.0 && < 2.7
+- resource-pool >= 0.2 && < 0.3
+- scalpel-core >= 0.6 && < 0.7
+- selda >= 0.5 && < 0.6
+- selda-postgresql >= 0.1 && < 0.2
+- text >= 1.2 && < 1.3
+- tagsoup >= 0.14 && < 0.15
+- tls >= 1.4.1 && < 1.5
+- time >= 1.8 && < 1.12
+- twitter-conduit >= 0.5 && < 0.6
+- twitter-types >= 0.10 && < 0.11
+- twitter-types-lens >= 0.10 && < 0.11
+- unordered-containers >= 0.2 && < 0.3
+- uuid >= 1.3 && < 1.4
+- vector >= 0.12 && < 0.13
+- wai >= 3.2 && < 3.3
+- wai-extra >= 3.0 && < 3.1
+- wai-middleware-static >= 0.8 && < 0.9
+- wai-middleware-throttle >= 0.3 && < 0.4
+- wai-responder >= 0.1 && < 0.2
+- warp >= 3.2 && < 3.3
+- word8 >= 0.1 && < 0.2
+- xss-sanitize >= 0.3 && < 0.4
+
+ghc-options:
+- -O2
+- -W
+
+default-extensions:
+- OverloadedStrings
+
+library:
+  source-dirs:
+    - app
+
+executables:
+  webserver:
+    main:                Server.hs
+    source-dirs:         exec
+    ghc-options:
+    - -main-is Server
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - sumi
+
+  worker:
+    main:                Worker.hs
+    source-dirs:         exec
+    ghc-options:
+    - -main-is Worker
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - sumi

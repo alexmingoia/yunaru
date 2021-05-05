@@ -1,0 +1,14 @@
+{
+  "name": "Yunaru",
+  "short_name": "Yunaru",
+  "lang": "en-us",
+  "start_url": "/",
+  "display": "standalone",
+  "icons": [
+    {
+      "src": "yunaru-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
