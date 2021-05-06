@@ -6,7 +6,8 @@ const fetch = require('node-fetch');
 
 const defaultConfig = {
   webhookSecret: process.env.WEBHOOK_SECRET,
-  webhookUrl: process.env.WEBHOOK_URL
+  webhookUrl: process.env.WEBHOOK_URL,
+  emailBucket: process.env.EMAIL_BUCKET
 };
 
 exports.parseEvent = function(data) {
@@ -34,13 +35,13 @@ exports.fetchMessage = function(data) {
   data.log({
     level: "info",
     message: "Fetching email at s3://" + data.config.emailBucket + '/' +
-      data.config.emailKeyPrefix + data.email.messageId
+      data.email.messageId
   });
   return new Promise(function(resolve, reject) {
     // Load the raw email from S3
     data.s3.getObject({
       Bucket: data.config.emailBucket,
-      Key: data.config.emailKeyPrefix + data.email.messageId
+      Key: data.email.messageId
     }, function(err, result) {
       if (err) {
         data.log({
@@ -61,28 +62,35 @@ exports.fetchMessage = function(data) {
 exports.processMessage = function(data) {
   return mailparser.simpleParser(data.emailData).then((parsed) => {
     const from = parsed['reply-to'] || parsed.from;
-    return {
+    return Object.assign(data, {
       fromEmail: from.value[0] ? from.value[0].address : '',
       fromName: from.value[0] ? from.value[0].name : '',
       recipientId: parsed.to.value[0] ? parsed.to.value[0].address.split('@').shift() : '',
       subject: parsed.subject,
       body: parsed.html || parsed.textAsHtml || parsed.text
-    };
+    });
   });
 };
 
 exports.sendWebhook = function(data) {
   const params = new URLSearchParams();
-  params.append('secret', config.webhookSecret);
+  params.append('secret', data.config.webhookSecret);
   params.append('from_email', data.fromEmail);
   params.append('from_name', data.fromName);
   params.append('recipient_id', data.recipientId);
   params.append('subject', data.subject);
   params.append('body', data.body);
-  return fetch(config.webhookUrl, {
+  return fetch(data.config.webhookUrl, {
     method: 'POST',
     body: params
   })
+  .then((res) => {
+    data.log({
+      level: 'info',
+      message: res.status,
+    });
+    return data;
+  });
 };
 
 exports.handler = function(event, context, callback, overrides) {

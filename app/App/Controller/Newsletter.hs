@@ -39,21 +39,19 @@ postNewsletterWebhook = do
           }
       author = fromMaybe newAuthor existingAuthorM
       oneWeekAgo = addUTCTime (-604800) now
-  if (isNothing existingAuthorM || authorImportedAt author < Just oneWeekAgo)
-    then do
-      updatedAuthorE <- liftIO (try (MF2.importAuthor (authorUrl author)) :: IO (Either AppError Author))
-      let updatedAuthorM = rightToMaybe updatedAuthorE
-      case updatedAuthorM of
-        Nothing -> DB.exec $ Author.save author
-        Just updatedAuthor -> do
-          DB.exec $ Author.save (updatedAuthor {authorImportedAt = Just now})
-    else DB.exec $ Author.save author
+  updatedAuthor <-
+    if (isNothing existingAuthorM || authorImportedAt author < Just oneWeekAgo)
+      then do
+        updatedAuthorE <- liftIO (try (MF2.importAuthor (authorUrl author)) :: IO (Either AppError Author))
+        return $ fromMaybe author (rightToMaybe updatedAuthorE)
+      else return author
+  DB.exec $ Author.save (updatedAuthor {authorImportedAt = Just now})
   let eUrl = fromUuid id
       fUrl = fromJust (parseUrl (newsletterId <> "/" <> renderDisplayUrl senderEmail))
       feed =
         Feed
           { feedUrl = fUrl,
-            feedAuthorUrl = authorUrl author,
+            feedAuthorUrl = authorUrl updatedAuthor,
             feedName = Just (renderDisplayUrl senderEmail),
             feedSummary = Nothing,
             feedFormat = EmailFeedFormat,
@@ -67,7 +65,7 @@ postNewsletterWebhook = do
       entry =
         Entry
           { entryUrl = eUrl,
-            entryAuthorUrl = authorUrl author,
+            entryAuthorUrl = authorUrl updatedAuthor,
             entryFeedUrl = fUrl,
             entryName = Just subject,
             entrySummary = summary,
