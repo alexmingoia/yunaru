@@ -8,6 +8,7 @@ import App.Controller.Session as Session
 import App.Model.Crypto as Crypto
 import qualified App.Model.Database as DB
 import App.Model.Env
+import App.Model.Mnemonic as Mnemonic
 import App.Model.Stripe as Stripe
 import App.Model.User as User
 import App.View.Page
@@ -84,7 +85,8 @@ verifyStripeCheckoutSuccess tokenP = do
       msg = encodeUtf8 (UUID.toText (userId user) <> ":stripe")
       token = Hex.encode (Crypto.hmac_sha256 key msg)
   when (token /= tokenP) $ send (redirect303 (renderUrl userUrl))
-  DB.exec $ User.save (user {userStatus = "active"})
+  newsletterId <- liftIO Mnemonic.nextRandom
+  DB.exec $ User.save (user {userStatus = "active", userNewsletterId = Just newsletterId})
   send $ redirect303 (renderUrl userUrl)
 
 catchStripeError :: IO a -> Responder AppEnv IO a

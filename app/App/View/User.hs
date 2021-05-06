@@ -62,8 +62,14 @@ userNewFormHtml env userM emailM passwordM confirmPasswordM errM = do
 
 userEditFormHtml env user pendingEmailM emailM errM = do
   when (not (userPaid user)) $ paymentIncompleteAlertHtml env
+  when (userPaid user) (userSubscriptionHtml env user)
+  whenJust (userNewsletterId user) $ \newsletterId -> do
+    H.section $ do
+      H.h2 "Newsletters"
+      H.p $ toHtml $ newsletterId <> "@" <> renderDisplayUrl (appUrl env)
+      H.p $ H.small $ "Subscribe to newsletters using this email and they will appear in your feed."
   H.section $ do
-    H.h1 "Account Settings"
+    H.h2 "Account"
     whenJust errM errorAlertHtml
     whenJust pendingEmailM $ \email -> do
       if isJust (userEmail user)
@@ -110,7 +116,6 @@ userEditFormHtml env user pendingEmailM emailM errM = do
           ! A.class_ (errorClass "password-confirm" "input" errM)
       H.div ! A.class_ "form-control" $ do
         H.button ! A.type_ "submit" $ "Save"
-  when (userPaid user) (userSubscriptionHtml env user)
   H.section $ do
     H.p $ do
       toHtml ("Questions or problems? Contact " :: Text)

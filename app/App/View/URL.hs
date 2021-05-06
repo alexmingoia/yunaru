@@ -20,15 +20,12 @@ canonicalEntryUrl env e =
     else entryUrl e
 
 localEntryFeedUrl :: AppEnv -> Entry -> URL
-localEntryFeedUrl env e =
-  if isRelative (entryFeedUrl e)
-    then withSubdomain (renderUrl (entryFeedUrl e)) (appUrl env)
-    else appUrl env +> ["feeds", renderUrl (entryFeedUrl e)]
+localEntryFeedUrl env e = appUrl env +> ["feeds", renderUrl (entryFeedUrl e)]
 
 canonicalEntryFeedUrl :: AppEnv -> Entry -> URL
 canonicalEntryFeedUrl env e =
   if isRelative (entryFeedUrl e)
-    then withSubdomain (renderUrl (entryFeedUrl e)) (appUrl env)
+    then localEntryFeedUrl env e
     else entryFeedUrl e
 
 localEntryAuthorUrl :: AppEnv -> EntryDetailed -> URL
@@ -47,28 +44,22 @@ canonicalEntryAuthorUrl env entryDtld =
         else authorUrl a
 
 localAuthorUrl :: AppEnv -> Author -> URL
-localAuthorUrl e a =
-  if isRelative (authorUrl a)
-    then withSubdomain (renderUrl (authorUrl a)) (appUrl e)
-    else appUrl e +> ["authors", renderUrl (authorUrl a)]
+localAuthorUrl e a = appUrl e +> ["authors", renderUrl (authorUrl a)]
 
 canonicalAuthorUrl :: AppEnv -> Author -> URL
 canonicalAuthorUrl e a =
   if isRelative (authorUrl a)
-    then withSubdomain (renderUrl (authorUrl a)) (appUrl e)
+    then localAuthorUrl e a
     else authorUrl a
 
 authorDisplayName :: AppEnv -> Author -> Text
 authorDisplayName e a = fromMaybe (renderDisplayUrl (canonicalAuthorUrl e a)) (authorName a)
 
 localFeedUrl :: AppEnv -> Feed -> URL
-localFeedUrl env f =
-  if isRelative (feedUrl f)
-    then withSubdomain (renderUrl (feedUrl f)) (appUrl env)
-    else appUrl env +> ["feeds", renderUrl (feedUrl f)]
+localFeedUrl env f = appUrl env +> ["feeds", renderUrl (feedUrl f)]
 
 canonicalFeedUrl :: AppEnv -> Feed -> URL
 canonicalFeedUrl env f =
   if isRelative (feedUrl f)
-    then withSubdomain (renderUrl (feedUrl f)) (appUrl env)
+    then localFeedUrl env f
     else feedUrl f

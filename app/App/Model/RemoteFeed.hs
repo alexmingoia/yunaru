@@ -24,6 +24,7 @@ fromFeed f = RemoteFeed (feedUrl f) (Just (feedFormat f))
 importEntries :: AppEnv -> RemoteFeed -> IO (FeedDetailed, [EntryDetailed])
 importEntries env (RemoteFeed url (Just TwitterFeedFormat)) = Twitter.importFeedEntries env url
 importEntries env (RemoteFeed url (Just MF2FeedFormat)) = Microformats2.importFeedEntries env url
+importEntries env (RemoteFeed url (Just EmailFeedFormat)) = Microformats2.importFeedEntries env url
 importEntries env (RemoteFeed url (Just _)) = RSS.importFeedEntries env Nothing url
 importEntries env (RemoteFeed url Nothing) =
   if Twitter.isProfileUrl url

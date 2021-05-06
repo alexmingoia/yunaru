@@ -53,7 +53,8 @@ save author = transaction $ do
             `with` [ #authorUrl := literal (authorUrl author),
                      #authorName := literal (authorName author),
                      #authorImageUrl := literal (authorImageUrl author),
-                     #authorNote := literal (authorNote author)
+                     #authorNote := literal (authorNote author),
+                     #authorImportedAt := literal (authorImportedAt author)
                    ]
       )
   if updated == 0 then insert_ authors [author] else pure ()

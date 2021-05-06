@@ -20,6 +20,7 @@ data User
       { userId :: UUID,
         userEmail :: Maybe Email,
         userPassword :: Maybe Text,
+        userNewsletterId :: Maybe Text,
         userStatus :: Text,
         userPaidUntil :: Maybe UTCTime,
         userCanceledAt :: Maybe UTCTime,
@@ -32,6 +33,20 @@ instance SqlRow User
 
 users :: Table User
 users = tableFieldMod "users" [] (toFieldName "user")
+
+emptyUser :: UUID -> UTCTime -> User
+emptyUser id createdAt =
+  User
+    { userId = id,
+      userEmail = Nothing,
+      userPassword = Nothing,
+      userNewsletterId = Nothing,
+      userStatus = "unpaid",
+      userPaidUntil = Nothing,
+      userCanceledAt = Nothing,
+      userStripeCustomerId = Nothing,
+      userCreatedAt = createdAt
+    }
 
 userRegistered :: User -> Bool
 userRegistered u = isJust (userPassword u) && isJust (userEmail u)
@@ -52,6 +67,12 @@ findOneByEmail email = fmap listToMaybe <$> query $ do
     ( u ! #userEmail .== literal (Just (lowercaseEmail email))
         .|| u ! #userEmail .== literal (Just email)
     )
+  return u
+
+findOneByNewsletterId :: Text -> SeldaT PG IO (Maybe User)
+findOneByNewsletterId newsletterId = fmap listToMaybe <$> query $ do
+  u <- select users
+  restrict (u ! #userNewsletterId .== literal (Just newsletterId))
   return u
 
 verifyPassword :: User -> Text -> Bool
@@ -78,6 +99,7 @@ save u = transaction $ do
           r
             `with` [ #userEmail := literal (userEmail u),
                      #userPassword := literal (userPassword u),
+                     #userNewsletterId := literal (userNewsletterId u),
                      #userStatus := literal (userStatus u),
                      #userPaidUntil := literal (userPaidUntil u),
                      #userCanceledAt := literal (userCanceledAt u)

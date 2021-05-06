@@ -8,6 +8,7 @@ import App.Controller.Entry as Entry
 import App.Controller.Feed as Feed
 import App.Controller.Following as Following
 import App.Controller.MagicLink as MagicLink
+import App.Controller.Newsletter as Newsletter
 import App.Controller.NotFound as NotFound
 import App.Controller.Payment as Payment
 import App.Controller.Session as Session
@@ -46,6 +47,7 @@ router = do
       ["payments", "stripe", "checkout-sessions"] -> Payment.getStripeCheckoutSessionId
       ["users"] -> User.post
       ["webhooks", "stripe"] -> Payment.postStripeWebhook
+      ["webhooks", "newsletters"] -> Newsletter.postNewsletterWebhook
       _ -> NotFound.get
     "PUT" -> case reqPath of
       ["followings", url] -> Following.put url

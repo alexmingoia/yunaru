@@ -9,7 +9,6 @@ import App.Model.Env
 import App.Model.User as User
 import App.View.Page
 import App.View.Session
-import Control.Exception
 import Control.Monad
 import Data.List as L
 import Data.Maybe
@@ -71,26 +70,15 @@ redirectIfRegisteredUser = do
 
 getOrCreateUser :: Responder AppEnv IO User
 getOrCreateUser = do
-  env <- getEnv
-  maybe (liftIO (createUser env Nothing)) pure =<< getUser
-  where
-    createUser env errM = do
-      uid <- UUIDv4.nextRandom
-      now <- getCurrentTime
-      let user =
-            User
-              { userId = uid,
-                userEmail = Nothing,
-                userPassword = Nothing,
-                userStatus = "unpaid",
-                userPaidUntil = Nothing,
-                userCanceledAt = Nothing,
-                userStripeCustomerId = Nothing,
-                userCreatedAt = now
-              }
-      handle (\(e :: SeldaError) -> maybe (createUser env (Just e)) throwIO errM) $ do
-        DB.execEnv env (User.save user)
-        return user
+  userM <- getUser
+  case userM of
+    Nothing -> do
+      id <- liftIO UUIDv4.nextRandom
+      now <- liftIO getCurrentTime
+      let user = emptyUser id now
+      DB.exec $ User.save user
+      return user
+    Just user -> return user
 
 createSessionCookie :: User -> Responder AppEnv IO SetCookie
 createSessionCookie user = do
@@ -113,7 +101,6 @@ createSessionCookie user = do
 
 delete :: Responder AppEnv IO ()
 delete = do
-  env <- getEnv
   maybe (send (redirect302 "/")) pure =<< getCookie "sid"
   now <- liftIO getCurrentTime
   let cookie =

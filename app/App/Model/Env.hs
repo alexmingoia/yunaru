@@ -40,6 +40,7 @@ data AppEnv
         appDbHost :: Text,
         appDbUser :: Text,
         appDbPass :: Text,
+        appNewsletterWebhookSecret :: Text,
         appAwsSesKey :: AWS.AccessKey,
         appAwsSesSecret :: AWS.SecretKey,
         appAwsSesRegion :: AWS.Region,
@@ -69,6 +70,7 @@ getAppEnv = do
   appDbHost <- getEnvText "APP_DB_HOST"
   appDbUser <- getEnvText "APP_DB_USER"
   appDbPass <- getEnvText "APP_DB_PASS"
+  appNewsletterWebhookSecret <- getEnvText "APP_NEWSLETTER_SECRET"
   appAwsSesKey <- AccessKey . encodeUtf8 <$> getEnvText "AWS_SES_KEY"
   appAwsSesSecret <- SecretKey . encodeUtf8 <$> getEnvText "AWS_SES_SECRET"
   sesRegionText <- getEnvText "AWS_SES_REGION"
@@ -96,6 +98,7 @@ getAppEnv = do
         appDbHost = appDbHost,
         appDbUser = appDbUser,
         appDbPass = appDbPass,
+        appNewsletterWebhookSecret = appNewsletterWebhookSecret,
         appAwsSesKey = appAwsSesKey,
         appAwsSesSecret = appAwsSesSecret,
         appAwsSesRegion = appAwsSesRegion,

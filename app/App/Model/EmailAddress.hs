@@ -2,7 +2,6 @@
 
 module App.Model.EmailAddress where
 
-import Data.Maybe
 import Data.Text as T
 import Database.Selda.SqlType
 import Text.Blaze.Html (AttributeValue, textValue)

@@ -10,6 +10,7 @@ import Data.Either.Combinators
 import Data.List.NonEmpty as NE
 import Data.Maybe
 import Data.Text as T
+import Data.UUID as UUID
 import Database.Selda.SqlType
 import Text.Blaze.Html (AttributeValue, textValue)
 import Text.URI hiding (relativeTo)
@@ -67,6 +68,12 @@ parseAbsoluteUrl txt = do
 parseInputUrl :: MonadThrow m => Text -> m URL
 parseInputUrl txt = if "http" `T.isPrefixOf` txt then parseAbsoluteUrl txt else parseAbsoluteUrl ("https://" <> txt)
 
+fromUuid :: UUID -> URL
+fromUuid uuid =
+  let pathPiece = fromJust $ mkPathPiece (UUID.toText uuid)
+      path = Just (False, NE.fromList [pathPiece])
+   in URL $ URI Nothing (Left False) path [] Nothing
+
 toURI :: URL -> URI
 toURI (URL uri) = uri
 
@@ -118,19 +125,13 @@ withHttps :: URL -> URL
 withHttps url@(URL (URI _ auth path query frag)) =
   if isRight auth then URL $ URI (mkScheme "https") auth path query frag else url
 
--- Return URL with subdomain prepended, returns unchanged URL if not absolute.
-withSubdomain :: Text -> URL -> URL
-withSubdomain subdomain url@(URL (URI scheme auth path query frag)) =
-  case auth of
-    Left _ -> url
-    Right auth -> fromMaybe url $ do
-      let host = unRText (authHost auth)
-      newHost <- mkHost (subdomain <> "." <> host)
-      let newAuth = auth {authHost = newHost}
-      return $ URL (URI scheme (Right newAuth) path query frag)
-
 withoutScheme :: URL -> URL
 withoutScheme (URL (URI _ auth path query frag)) = URL $ URI Nothing auth path query frag
+
+withoutUserInfo :: URL -> URL
+withoutUserInfo (URL (URI scheme (Right a) path query frag)) =
+  URL $ URI scheme (Right (Authority Nothing (authHost a) Nothing)) path query frag
+withoutUserInfo url = url
 
 withEndingSlash :: URL -> URL
 withEndingSlash (URL (URI scheme auth (Just (False, path)) query frag)) =

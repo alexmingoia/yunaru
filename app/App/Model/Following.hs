@@ -9,6 +9,7 @@ import App.Model.URL
 import App.Model.User
 import Control.Monad
 import Control.Monad.Catch
+import Data.List as L
 import Data.Maybe
 import qualified Data.Text as T
 
@@ -45,6 +46,14 @@ save following = do
       (\f -> f ! #followingUserId .== literal uid .&& f ! #followingFeedUrl .== literal feedUrl)
       (\f -> f `with` [#followingMuted := literal (followingMuted following)])
   when (updated == 0) $ insert_ followings [following]
+
+saveIfNew :: Following -> SeldaT PG IO ()
+saveIfNew following = do
+  new <- fmap L.null <$> query $ do
+    f <- select followings
+    restrict (f ! #followingUserId .== literal (followingUserId following) .&& f ! #followingFeedUrl .== literal (followingFeedUrl following))
+    return (f ! #followingUserId)
+  when new $ insert_ followings [following]
 
 type ExistingUser = User
 

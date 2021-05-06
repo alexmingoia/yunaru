@@ -46,6 +46,7 @@ data FeedFormat
   | AtomFeedFormat
   | XMLFeedFormat
   | TwitterFeedFormat
+  | EmailFeedFormat
   deriving (Eq, Show, Read, Bounded, Enum)
 
 instance SqlType FeedFormat

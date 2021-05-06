@@ -46,16 +46,16 @@ feedHeaderHtml env feedDtld = do
     let authorImageSrcM = Image.cacheUrl env 128 128 True <$> authorImageUrl author
     whenJust authorImageSrcM $ \src -> do
       H.div ! A.class_ "image" $ H.img ! A.src (urlValue src) ! A.width "64" ! A.height "64" ! A.class_ "u-photo"
-      H.h1
-        ! (if isJust (feedName feed) then A.class_ "p-name" else mempty)
-        $ toHtml
-        $ fromMaybe (feedDisplayName feedDtld) (authorName author)
+    H.h1
+      ! (if isJust (feedName feed) then A.class_ "p-name" else mempty)
+      $ toHtml
+      $ fromMaybe (feedDisplayName feedDtld) (authorName author)
     H.p $ H.small $ do
       if authorUrl author == feedUrl feed
         then do
           let hrefUrl = canonicalFeedUrl env feed
               displayUrl = renderDisplayUrl hrefUrl
-          Icon.globe
+          feedIcon (feedFormat feed)
           toHtml (" " :: Text)
           H.a ! A.href (urlValue hrefUrl) ! A.class_ "u-url" $ toHtml displayUrl
         else do
@@ -63,13 +63,17 @@ feedHeaderHtml env feedDtld = do
           toHtml (" " :: Text)
           H.a ! A.href (urlValue (authorUrl author)) $ toHtml $ renderDisplayUrl (authorUrl author)
           H.br
-          Icon.rss
+          feedIcon (feedFormat feed)
           toHtml (" " :: Text)
-          when (feedName feed /= authorName author) $ do
-            H.span ! A.class_ "p-name" $ toHtml (feedDisplayName feedDtld)
-            toHtml (": " :: Text)
-          H.a ! A.href (urlValue (feedUrl feed)) ! A.class_ "u-url" $ do
-            toHtml (renderDisplayUrl (feedUrl feed))
+          case feedFormat feed of
+            EmailFeedFormat -> do
+              H.span ! A.class_ "p-name" $ toHtml (feedDisplayName feedDtld)
+            _ -> do
+              when (feedName feed /= authorName author) $ do
+                H.span ! A.class_ "p-name" $ toHtml (feedDisplayName feedDtld)
+                toHtml (": " :: Text)
+              H.a ! A.href (urlValue (feedUrl feed)) ! A.class_ "u-url" $ do
+                toHtml (renderDisplayUrl (feedUrl feed))
     whenJust (feedSummary feed <|> authorNote author) $ \summary -> do
       H.p ! A.class_ "p-summary" $ preEscapedToHtml summary
     H.div ! A.class_ "form-controls-inline" $ do
@@ -81,6 +85,11 @@ feedHeaderHtml env feedDtld = do
       case authorName author of
         Nothing -> H.a ! A.href (urlValue url) ! A.class_ "u-url" $ toHtml (renderDisplayUrl url)
         Just name -> H.a ! A.href (urlValue url) ! A.class_ "u-url p-name" $ toHtml name
+
+feedIcon EmailFeedFormat = Icon.newsletter
+feedIcon TwitterFeedFormat = Icon.twitter
+feedIcon MF2FeedFormat = Icon.globe
+feedIcon _ = Icon.rss
 
 feedFollowButtonHtml env followingM feedDtld = do
   let isFollowing = isJust followingM
