@@ -198,11 +198,16 @@ sanitizeAndProxyImageHtml env baseUrl = XSS.filterTags (wrapImageTags . proxyIma
 
 sanitizeTags :: [TS.Tag Text] -> [TS.Tag Text]
 sanitizeTags =
-  L.filter (not . disallowedTag) . fmap stripClass . XSS.balanceTags . XSS.safeTags
+  L.filter (not . disallowedTag)
+    . fmap (stripStyle . stripClass)
+    . XSS.balanceTags
+    . XSS.safeTags
   where
     disallowedTag (TS.TagOpen n _) = n `S.member` disallowedTags
     disallowedTag (TS.TagClose n) = n `S.member` disallowedTags
     disallowedTag _ = False
+    stripStyle (TS.TagOpen n attrs) = TS.TagOpen n (L.filter ((/= "style") . fst) attrs)
+    stripStyle t = t
     stripClass (TS.TagOpen n attrs) = TS.TagOpen n (L.filter ((/= "class") . fst) attrs)
     stripClass t = t
 
