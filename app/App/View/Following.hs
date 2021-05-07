@@ -98,7 +98,7 @@ followingRecentEntrySnippetHtml env now followingDtld = do
             Icon.reblog ! customAttribute "aria-label" "reblog"
             toHtml (" " :: Text)
           whenJust (entryName e) $ \name -> do
-            H.a ! A.href (urlValue (entryUrl e)) $ toHtml name
+            H.a ! A.href (urlValue (localEntryUrl env e)) $ toHtml name
             when (isJust (entrySummary e)) (toHtml (": " :: Text))
           whenJust (entrySummary e) $ \summary -> do
             preEscapedToHtml summary
