@@ -77,7 +77,7 @@ postNewsletterWebhook = do
             entryRebloggedAt = Nothing,
             entryPublishedAt = Just now,
             entryUpdatedAt = Just now,
-            entryImportedAt = Just now
+            entryImportedAt = Nothing
           }
       following =
         Following
