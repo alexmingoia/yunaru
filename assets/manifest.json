@@ -1,12 +1,12 @@
 {
-  "name": "Yunaru",
-  "short_name": "Yunaru",
+  "name": "sumi.news",
+  "short_name": "sumi.news",
   "lang": "en-us",
   "start_url": "/",
   "display": "standalone",
   "icons": [
     {
-      "src": "yunaru-512x512.png",
+      "src": "sumi-news-512x512.png",
       "sizes": "512x512",
       "type": "image/png"
     }
