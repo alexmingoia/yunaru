@@ -23,7 +23,7 @@ cacheUrl env width height crop url =
           widthP = T.pack (show width)
           heightP = T.pack (show height)
           gravity = "ce"
-          enlarge = "t"
+          enlarge = "f"
           output = if ext == "gif" || ext == "svg" then ext else "jpg"
           base64url = Base64Url.encode (encodeUtf8 (renderUrl url))
           basePath = [resizeType, widthP, heightP, gravity, enlarge, base64url <> "." <> output]
