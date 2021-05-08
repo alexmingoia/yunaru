@@ -201,6 +201,7 @@ sanitizeAndProxyImageHtml env baseUrl =
         . stripEmptyTags
         . stripWhitespace
         . sanitizeTags
+        . stripHtmlHead
     )
 
 sanitizeTags :: [TS.Tag Text] -> [TS.Tag Text]
@@ -217,6 +218,14 @@ sanitizeTags =
     stripStyle t = t
     stripClass (TS.TagOpen n attrs) = TS.TagOpen n (L.filter ((/= "class") . fst) attrs)
     stripClass t = t
+
+stripHtmlHead :: [TS.Tag Text] -> [TS.Tag Text]
+stripHtmlHead = go False
+  where
+    go _ ((TS.TagOpen "head" _) : ts) = go True ts
+    go _ ((TS.TagClose "head") : ts) = go False ts
+    go isHead (t : ts) = if isHead then go isHead ts else t : go isHead ts
+    go _ [] = []
 
 stripWhitespace :: [TS.Tag Text] -> [TS.Tag Text]
 stripWhitespace (t1@(TS.TagClose _) : t2@(TS.TagText txt) : t3@(TS.TagOpen _ _) : ts) =
@@ -250,6 +259,8 @@ stripEmptyTags ((TS.TagOpen "div" _) : (TS.TagOpen "br" _) : (TS.TagClose "div")
 stripEmptyTags ((TS.TagOpen "div" _) : (TS.TagOpen "br" _) : (TS.TagClose "br") : (TS.TagClose "div") : ts) =
   stripEmptyTags ts
 stripEmptyTags ((TS.TagOpen "div" _) : (TS.TagClose "div") : ts) =
+  stripEmptyTags ts
+stripEmptyTags ((TS.TagOpen "style" _) : (TS.TagText _) : (TS.TagClose "style") : ts) =
   stripEmptyTags ts
 stripEmptyTags (t : ts) = t : stripEmptyTags ts
 stripEmptyTags [] = []
