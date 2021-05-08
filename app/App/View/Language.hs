@@ -194,7 +194,14 @@ replaceNewlines :: Text -> Text
 replaceNewlines = T.replace "\n" "<br />" . T.replace "\r\n" "<br />"
 
 sanitizeAndProxyImageHtml :: AppEnv -> URL -> Text -> Text
-sanitizeAndProxyImageHtml env baseUrl = XSS.filterTags (wrapImageTags . proxyImageTags env baseUrl . sanitizeTags)
+sanitizeAndProxyImageHtml env baseUrl =
+  XSS.filterTags
+    ( wrapImageTags
+        . proxyImageTags env baseUrl
+        . stripEmptyTags
+        . stripWhitespace
+        . sanitizeTags
+    )
 
 sanitizeTags :: [TS.Tag Text] -> [TS.Tag Text]
 sanitizeTags =
@@ -210,6 +217,42 @@ sanitizeTags =
     stripStyle t = t
     stripClass (TS.TagOpen n attrs) = TS.TagOpen n (L.filter ((/= "class") . fst) attrs)
     stripClass t = t
+
+stripWhitespace :: [TS.Tag Text] -> [TS.Tag Text]
+stripWhitespace (t1@(TS.TagClose _) : t2@(TS.TagText txt) : t3@(TS.TagOpen _ _) : ts) =
+  if T.all isSpace txt
+    then t1 : t3 : stripWhitespace ts
+    else t1 : t2 : t3 : stripWhitespace ts
+stripWhitespace (t1@(TS.TagClose _) : t2@(TS.TagText txt) : t3@(TS.TagClose _) : ts) =
+  if T.all isSpace txt
+    then t1 : t3 : stripWhitespace ts
+    else t1 : t2 : t3 : stripWhitespace ts
+stripWhitespace (t1@(TS.TagOpen _ _) : t2@(TS.TagText txt) : t3@(TS.TagOpen _ _) : ts) =
+  if T.all isSpace txt
+    then t1 : t3 : stripWhitespace ts
+    else t1 : t2 : t3 : stripWhitespace ts
+stripWhitespace (t1@(TS.TagOpen _ _) : t2@(TS.TagText txt) : t3@(TS.TagClose _) : ts) =
+  if T.all isSpace txt
+    then t1 : t3 : stripWhitespace ts
+    else t1 : t2 : t3 : stripWhitespace ts
+stripWhitespace (t : ts) = t : stripWhitespace ts
+stripWhitespace [] = []
+
+stripEmptyTags :: [TS.Tag Text] -> [TS.Tag Text]
+stripEmptyTags ((TS.TagOpen "p" _) : (TS.TagOpen "br" _) : (TS.TagClose "br") : (TS.TagClose "p") : ts) =
+  stripEmptyTags ts
+stripEmptyTags ((TS.TagOpen "p" _) : (TS.TagOpen "br" _) : (TS.TagClose "p") : ts) =
+  stripEmptyTags ts
+stripEmptyTags ((TS.TagOpen "p" _) : (TS.TagClose "p") : ts) =
+  stripEmptyTags ts
+stripEmptyTags ((TS.TagOpen "div" _) : (TS.TagOpen "br" _) : (TS.TagClose "div") : ts) =
+  stripEmptyTags ts
+stripEmptyTags ((TS.TagOpen "div" _) : (TS.TagOpen "br" _) : (TS.TagClose "br") : (TS.TagClose "div") : ts) =
+  stripEmptyTags ts
+stripEmptyTags ((TS.TagOpen "div" _) : (TS.TagClose "div") : ts) =
+  stripEmptyTags ts
+stripEmptyTags (t : ts) = t : stripEmptyTags ts
+stripEmptyTags [] = []
 
 wrapImageTags :: [TS.Tag Text] -> [TS.Tag Text]
 wrapImageTags (t1@(TS.TagOpen "figure" _) : t2@(TS.TagOpen "img" _) : ts) =
