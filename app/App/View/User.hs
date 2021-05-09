@@ -22,9 +22,10 @@ userNewFormHtml env userM emailM passwordM confirmPasswordM errM = do
   H.section $ do
     H.h1 "Create Account"
     H.p $ do
-      toHtml ("Create an account for " :: Text)
+      toHtml (appName env)
+      toHtml (" costs " :: Text)
       H.strong "$33 per year"
-      toHtml (" to save your followings. You'll also be able to subscribe to newsletters and read them in your feed." :: Text)
+      toHtml (" and includes unlimited followings. You'll also get an email you can use to read newsletters in your feed." :: Text)
     H.p $ toHtml $ toTitle (appName env) <> " is independently owned. There's no tracking, no ads, and your data is kept private."
     H.hr
     whenJust errM errorAlertHtml

@@ -19,7 +19,7 @@ signupNoticeHtml env userM =
     H.aside $ do
       H.p $ do
         H.a ! A.href (urlValue signupUrl) $ "Create an account"
-        toHtml (" and save your followings for $33 per year. You'll also get an email address you can use to subscribe to newsletters and read them in your feed." :: Text)
+        toHtml (" to save your followings for $33 per year. You'll also get an email you can use to read newsletters in your feed." :: Text)
 
 paymentIncompleteAlertHtml env = do
   let paymentUrl = appUrl env +> ["payments", "new"]
