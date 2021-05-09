@@ -22,7 +22,7 @@ import qualified Text.Blaze.Html5.Attributes as A
 import Web.Cookie
 
 appDesc :: Text
-appDesc = "Follow everything in one place, at your own pace. Read RSS, Twitter, newsletters, and more."
+appDesc = "A peaceful news feed. Follow RSS, Twitter, newsletters, and more. No ads, no algorithm, no distractions."
 
 data Page
   = Page

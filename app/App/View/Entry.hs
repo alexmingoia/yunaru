@@ -44,8 +44,8 @@ endOfEntriesNoticeHtml = do
 
 noFollowingEntriesNoticeHtml env = do
   let formActionUrl = appUrl env +> ["followings"]
-  H.h1 "Follow everything in one place."
-  H.p "Read RSS, Twitter, newsletters, and more."
+  H.h1 "A peaceful news feed."
+  H.p "Follow RSS, Twitter, newsletters, and more. No ads, no algorithm, no distractions."
   H.form ! A.method "POST" ! A.action (urlValue formActionUrl) $ do
     H.div ! A.class_ "form-controls-inline" $ do
       H.div ! A.class_ "form-control" $ do
