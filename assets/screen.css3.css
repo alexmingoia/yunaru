@@ -469,7 +469,6 @@ form.centered button {
 }
 
 .form-control {
-  font-size: .9375rem;
   margin: 1rem 0;
   text-align: left;
 }
@@ -477,7 +476,7 @@ form.centered button {
 .form-controls-inline {
   display: flex;
   justify-content: center;
-  margin: 1rem -.25rem;
+  margin: 1rem -.25rem 2rem -.25rem;
 }
 
 .form-controls-inline > * {

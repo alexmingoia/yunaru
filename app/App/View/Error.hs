@@ -3,17 +3,11 @@
 module App.View.Error where
 
 import App.Model.Env
-import App.View.Page
 import Control.Exception
 import Data.Text
 import Text.Blaze.Html ((!), AttributeValue, Html, textValue, toHtml)
 import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A
-
--- | Render HTML error page.
-errorPage :: Text -> Page
-errorPage msg =
-  withLocation (TitledLocation "Error") $ withHtml $ H.h1 (toHtml msg)
 
 -- | Render an HTML error alert.
 errorAlertHtml :: AppError -> Html

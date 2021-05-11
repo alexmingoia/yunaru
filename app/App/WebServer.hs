@@ -2,85 +2,68 @@
 
 module App.WebServer where
 
+import qualified App.Controller.About as About
+import qualified App.Controller.Author as Author
+import qualified App.Controller.Entry as Entry
 import qualified App.Controller.Error as Error
-import App.Controller.Router (router)
+import qualified App.Controller.Feed as Feed
+import qualified App.Controller.Following as Following
+import qualified App.Controller.MagicLink as MagicLink
+import qualified App.Controller.Newsletter as Newsletter
+import qualified App.Controller.NotFound as NotFound
+import qualified App.Controller.Payment as Payment
 import qualified App.Controller.Session as Session
-import App.Model.Database as DB
-import App.Model.Env
-import Control.Exception
-import qualified Data.ByteString as BS
-import qualified Data.ByteString.Char8 as Char8
-import Data.List as L
-import Data.Maybe
-import Data.Set as Set
-import Data.Word8 (_semicolon)
-import Network.Wai
-import Network.Wai.Handler.Warp
+import qualified App.Controller.User as User
+import qualified App.Model.Database as DB
+import App.Model.Env as Env
 import Network.Wai.Middleware.Autohead
-import Network.Wai.Middleware.Gzip
 import Network.Wai.Middleware.MethodOverride
 import Network.Wai.Middleware.RequestLogger
 import Network.Wai.Middleware.Static
-import Network.Wai.Middleware.Throttle
-import Network.Wai.Middleware.Vhost
-import Network.Wai.Responder
-import System.Clock (TimeSpec (..))
-import System.Environment
+import Web.Twain
 
 serve :: IO ()
 serve = do
-  env <- getAppEnv
-  port <- maybe (fromMaybe 2020 (urlPort (appUrl env))) read <$> lookupEnv "PORT"
-  let serverSettings = setPort port (setOnExceptionResponse (Error.response env) defaultSettings)
-  connEnv <- DB.withPool env
-  runSettings serverSettings =<< middleware connEnv (app connEnv)
-  where
-    app :: AppEnv -> Application
-    app env req respond = do
-      let maxReqSize = 5000000
-      parsedReq <- parseRequest maxReqSize req
-      sessEnv <- Session.withUser env req
-      eres <- runResponder sessEnv parsedReq router
-      either respond (const noResError) eres
-    noResError :: IO a
-    noResError = do
-      putStrLn "Failed to construct a response."
-      throwIO (InternalError "Failed to construct a response.")
+  env <- DB.withPool =<< Env.readAppEnv
+  cacheContainer <- initCacheContainer env
+  twain 2020 env $ do
+    middleware $ autohead
+    middleware $ methodOverride
+    middleware $ if appDebug env then logStdoutDev else id
+    middleware $ staticPolicy' cacheContainer (hasPrefix "assets")
+    get "/" $ Entry.getFollowing Nothing
+    get "/authors/:url" Author.get
+    get "/followings" $ Following.getRecentEntryList Nothing
+    get "/magic-links/new" $ MagicLink.getForm Nothing
+    get "/magic-links/sent" MagicLink.getSentMessage
+    get "/magic-links/:id" MagicLink.get
+    get "/payments/new" Payment.getPaymentForm
+    get "/payments/stripe/portal" Payment.redirectToStripeCustomerPortal
+    get "/payments/stripe/success/:token" Payment.verifyStripeCheckoutSuccess
+    get "/privacy" About.getPrivacyPolicy
+    get "/sessions/new" $ Session.getSigninForm Nothing
+    get "/terms" About.getTerms
+    get "/users/new" $ User.getForm Nothing
+    get "/users/:id/edit" $ User.getForm Nothing
+    get "/feeds/:url" Feed.get
+    get "/feeds/:feedUrl/entries/:entryUrl" Entry.get
+    post "/" Following.post
+    post "/followings" Following.post
+    post "/magic-links" MagicLink.post
+    post "/sessions" Session.post
+    post "/payments/stripe/checkout-sessions" Payment.getStripeCheckoutSessionId
+    post "/users" User.post
+    post "/webhooks/stripe" Payment.postStripeWebhook
+    post "/webhooks/newsletters" Newsletter.postNewsletterWebhook
+    put "/followings/:url" Following.put
+    put "/users/:id" User.put
+    delete "/followings/:url" Following.delete
+    delete "/sessions/:id" Session.delete
+    notFound NotFound.get
+    onException $ Error.response env
 
-middleware env app = do
+initCacheContainer env = do
   let noCachePolicy = CustomCaching (const [("Cache-Control", "no-cache")])
-      defThSettings = defaultThrottleSettings (TimeSpec 5 0)
-      thSettings = defThSettings {throttleSettingsRate = 2, throttleSettingsPeriod = 1, throttleSettingsBurst = 10}
-      gzipSettings = def {gzipCheckMime = gzippable}
-      logRequests = if appDebug env then logStdoutDev else id
-  th <- initCustomThrottler thSettings throttleKey
-  cacheContainer <- if appProduction env then initCaching PublicStaticCaching else initCaching noCachePolicy
-  return
-    $ throttle th
-    $ redirectWWW (renderUrl (appUrl env))
-    $ autohead
-    $ methodOverride
-    $ gzip gzipSettings
-    $ logRequests
-    $ staticPolicy' cacheContainer (hasPrefix "assets")
-    $ app
-
--- Get the key used for rate-limiter.
-throttleKey :: Request -> Either Response Char8.ByteString
-throttleKey r =
-  let xf = snd <$> L.find (\(n, _) -> n == "X-Forwarded-For" || n == "x-forwarded-for") (requestHeaders r)
-      rh = Char8.pack (show (remoteHost r))
-   in Right (fromMaybe rh xf)
-
--- Check if mime-type should be gzipped.
-gzippable :: BS.ByteString -> Bool
-gzippable bs = Char8.isPrefixOf "text/" bs || Set.member bs' mimetypes
-  where
-    bs' = fst $ BS.break (== _semicolon) bs
-    mimetypes =
-      Set.fromList
-        [ "application/json",
-          "application/javascript",
-          "application/rss+xml",
-          "image/x-icon"
-        ]
+  if appProduction env
+    then initCaching PublicStaticCaching
+    else initCaching noCachePolicy

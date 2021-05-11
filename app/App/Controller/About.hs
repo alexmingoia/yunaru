@@ -2,20 +2,17 @@
 
 module App.Controller.About where
 
+import App.Controller.Page
 import App.Model.Env
-import App.View.Page
 import Data.Text
-import Network.HTTP.Types
-import Network.Wai.Responder
 import Text.Blaze.Html (toHtml)
 import Text.Blaze.Html5 as H
 import Text.Blaze.Html5.Attributes as A
+import Web.Twain
 
 getPrivacyPolicy = do
-  sendHtmlPage status200
-    $ withLocation (TitledLocation "Privacy Policy")
-    $ withHtml
-    $ do
+  sendHtmlPage status200 "Privacy Policy" $
+    do
       H.h1 "Privacy Policy"
       H.p $ do
         H.strong "We do not share or sell your private information, and work hard to protect it."
@@ -23,16 +20,14 @@ getPrivacyPolicy = do
       H.p "This privacy policy is effective November 1st, 2020 and may be updated in the future."
 
 getTerms = do
-  env <- getEnv
-  let displayUrl = renderDisplayUrl (appUrl env)
-      displayName = appName env
-      displayEmail = renderEmail (appEmail env)
-      privacyPolicyUrl = appUrl env +> ["privacy"]
-      legalName = displayName <> " Inc."
-  sendHtmlPage status200
-    $ withLocation (TitledLocation "Terms of Service")
-    $ withHtml
-    $ do
+  url <- appUrl <$> env
+  displayEmail <- renderEmail . appEmail <$> env
+  displayName <- appName <$> env
+  let displayUrl = renderDisplayUrl url
+      privacyPolicyUrl = url +> ["privacy"]
+      legalName = "Tofu Kid LLC"
+  sendHtmlPage status200 "Terms of Service" $
+    do
       H.h1 "Terms of Service"
       H.section $ do
         H.ul $ do

@@ -36,12 +36,11 @@ magicLinkFormHtml err = do
         H.button ! A.type_ "submit" $ "Sign in"
 
 magicLinkSentHtml = do
-  H.header $ H.h1 $ "Check your email."
-  H.section $ do
-    H.p $ do
-      toHtml ("We sent you a magic link to sign in." :: Text)
-      H.br
-      toHtml ("If it's in your spam folder, help us by unmarking as spam." :: Text)
+  H.h1 $ "Check your email."
+  H.p $ do
+    toHtml ("We sent you a magic link to sign in." :: Text)
+    H.br
+    toHtml ("If it's in your spam folder, help us by unmarking as spam." :: Text)
 
 magicLinkEmailMessage :: AppEnv -> MagicLink -> Message
 magicLinkEmailMessage env magicLink =

@@ -3,40 +3,37 @@
 module App.Controller.Entry where
 
 import App.Controller.NotFound as NotFound
+import App.Controller.Page
 import App.Controller.Session as Session
 import App.Model.Database as DB
 import App.Model.EntryDetailed as EntryDetailed
 import App.Model.Env
 import App.View.Entry
 import App.View.Language
-import App.View.Page
 import Data.Time.Clock
 import Network.HTTP.Types
-import Network.Wai.Responder
+import Web.Twain
 
 pageSize = 30
 
-get :: Text -> Text -> Responder AppEnv IO a
-get feedUrlP entryUrlP = do
+get :: RouteM AppEnv a
+get = do
+  feedUrlP <- param "feedUrl"
+  entryUrlP <- param "entryUrl"
   now <- liftIO getCurrentTime
   feedUrl <- maybe NotFound.get pure (parseUrl feedUrlP)
   url <- maybe NotFound.get pure (parseUrl entryUrlP)
   entryDtld <- maybe NotFound.get pure =<< (DB.exec (EntryDetailed.findOne feedUrl url))
-  env <- getEnv
-  sendHtmlPage status200
-    $ withLocation (EntryLocation entryDtld)
-    $ withHead (entryOgLinks env entryDtld)
-    $ withHtml
-    $ entryHtml env now entryDtld
+  appEnv <- env
+  sendHtmlPage status200 (entryPageTitle entryDtld) $
+    entryHtml appEnv now entryDtld
 
-getFollowing :: Maybe AppError -> Responder AppEnv IO a
+getFollowing :: Maybe AppError -> RouteM AppEnv a
 getFollowing err = do
-  env <- getEnv
-  beforeM <- (parseDateTime =<<) <$> getQueryParam "before"
+  appEnv <- env
+  beforeM <- (parseDateTime =<<) <$> paramMaybe "before"
   userM <- Session.getUser
   entriesDtld <- maybe (pure []) (DB.exec . EntryDetailed.findFollowing pageSize beforeM) userM
   now <- liftIO getCurrentTime
-  sendHtmlPage (errorStatus err)
-    $ withLocation UntitledLocation
-    $ withHtml
-    $ followingEntriesHtml env now userM pageSize beforeM entriesDtld
+  sendHtmlPage (errorStatus err) (appName appEnv) $
+    followingEntriesHtml appEnv now userM pageSize beforeM entriesDtld

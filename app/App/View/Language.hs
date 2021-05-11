@@ -100,17 +100,6 @@ feedPageTitle feedDtld =
       author = feedAuthor feedDtld
    in fromMaybe (renderDisplayUrl (feedUrl feed)) (feedName feed <|> authorName author)
 
-feedPageDesc env feedDtld =
-  let f = feedInfo feedDtld
-      a = feedAuthor feedDtld
-      defaultLocalSummary = "Latest blog posts by " <> feedDisplayName feedDtld <> "."
-      defaultExternalSummary = "Follow " <> feedDisplayName feedDtld <> " using " <> appName env <> "."
-      defaultSummary = if isJust (feedImportedAt f) then defaultExternalSummary else defaultLocalSummary
-      feedSummary' = summaryFromHtml Nothing <$> (nullifyText =<< (feedSummary f <|> authorNote a))
-   in if isJust (feedImportedAt f)
-        then defaultSummary
-        else fromMaybe defaultSummary feedSummary'
-
 formatTime8601 :: UTCTime -> Text
 formatTime8601 = pack . formatTime defaultTimeLocale "%Y-%m-%dT%H:%M:%S%QZ"
 

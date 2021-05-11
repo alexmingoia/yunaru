@@ -3,6 +3,7 @@
 module App.Controller.MagicLink where
 
 import App.Controller.Error as Error
+import App.Controller.Page
 import App.Controller.Session as Session
 import App.Model.Database as DB
 import App.Model.Env
@@ -10,41 +11,35 @@ import App.Model.Following as Following
 import App.Model.MagicLink as MagicLink
 import App.Model.User as User
 import App.View.MagicLink
-import App.View.Page
 import Control.Monad.Extra
 import Data.Maybe
 import Data.Time.Clock
 import qualified Data.UUID as UUID
 import qualified Data.UUID.V4 as UUIDv4
 import Network.HTTP.Types
-import Network.Wai.Responder
+import Web.Twain
 
 getForm err = do
   Session.redirectIfRegisteredUser
-  sendHtmlPage (errorStatus err)
-    $ withLocation (TitledLocation "Sign in")
-    $ withHtml
-    $ magicLinkFormHtml err
+  sendHtmlPage (errorStatus err) "Sign in" $ magicLinkFormHtml err
 
 getSentMessage = do
   Session.redirectIfRegisteredUser
-  sendHtmlPage status200
-    $ withLocation (TitledLocation "Sign in")
-    $ withHtml magicLinkSentHtml
+  sendHtmlPage status200 "Sign in" magicLinkSentHtml
 
 post = do
   Session.redirectIfRegisteredUser
-  emailP <- getParam "email"
-  email <- maybe (getForm (Just (InputError "email" "Email cannot be blank."))) pure (parseEmail =<< emailP)
+  email <- either (getForm . Just . InputError "email") pure =<< param' "email"
   mid <- liftIO UUIDv4.nextRandom
   expires <- addUTCTime 600 <$> liftIO getCurrentTime
   DB.exec $ MagicLink.save $ MagicLink mid email expires SignInMagicLink Nothing Nothing
-  send (redirect303 "/magic-links/sent")
+  send $ redirect303 "/magic-links/sent"
 
-get :: Text -> Responder AppEnv IO ()
-get midP = do
+get :: RouteM AppEnv ()
+get = do
   let expiredError = InputError "url" "The magic link you used is expired."
       invalidError = InputError "url" "The magic link you used is invalid."
+  midP <- param "id"
   mid <- maybe (Error.get invalidError) pure (UUID.fromText midP)
   DB.exec MagicLink.deleteExpired
   -- Verify magic link exists.
@@ -65,4 +60,4 @@ get midP = do
     DB.exec (User.save updatedUser)
   sessionCookie <- Session.createSessionCookie user
   DB.exec (MagicLink.delete magicLink)
-  send $ setCookie sessionCookie $ redirect302 "/"
+  send $ withCookie' sessionCookie $ redirect302 "/"

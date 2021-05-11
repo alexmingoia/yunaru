@@ -62,17 +62,6 @@ packages:
     git: git://github.com/alexmingoia/webmention
     commit: 97e580a2d3407bf707967748a0a9449132476e83
 - completed:
-    name: wai-responder
-    version: 0.1.0.0
-    git: git://github.com/alexmingoia/wai-responder
-    pantry-tree:
-      size: 543
-      sha256: 2c62cbcbe6eaf51205e41592b7db8a6676950afa0199628a2f2c4acd25ff2ac9
-    commit: db6660f801f7add04d83f999bde4de7dbdea0ea4
-  original:
-    git: git://github.com/alexmingoia/wai-responder
-    commit: db6660f801f7add04d83f999bde4de7dbdea0ea4
-- completed:
     name: twitter-conduit
     version: 0.5.1
     git: https://github.com/himura/twitter-conduit.git

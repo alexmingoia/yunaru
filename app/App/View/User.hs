@@ -3,6 +3,7 @@
 module App.View.User where
 
 import App.Model.Env
+import App.Model.User
 import App.View.Error
 import App.View.Language
 import App.View.Payment
@@ -19,6 +20,7 @@ userNewFormHtml env userM emailM passwordM confirmPasswordM errM = do
         case userId <$> userM of
           Nothing -> appUrl env +> ["users"]
           Just id -> appUrl env +> ["users", UUID.toText id] ?> [("_method", "PUT")]
+  stripeJsHtml env
   H.section $ do
     H.h1 "Create Account"
     H.p $ do
@@ -62,6 +64,7 @@ userNewFormHtml env userM emailM passwordM confirmPasswordM errM = do
         H.button ! A.type_ "submit" $ "Create account"
 
 userEditFormHtml env user pendingEmailM emailM errM = do
+  stripeJsHtml env
   when (not (userPaid user)) $ paymentIncompleteAlertHtml env
   when (userPaid user) (userSubscriptionHtml env user)
   whenJust (userNewsletterId user) $ \newsletterId -> do

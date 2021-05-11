@@ -4,6 +4,7 @@
 module App.Controller.Payment where
 
 import App.Controller.Error as Error
+import App.Controller.Page
 import App.Controller.Session as Session
 import App.Model.Crypto as Crypto
 import qualified App.Model.Database as DB
@@ -11,7 +12,6 @@ import App.Model.Env
 import App.Model.Mnemonic as Mnemonic
 import App.Model.Stripe as Stripe
 import App.Model.User as User
-import App.View.Page
 import App.View.Payment
 import qualified Codec.Base16 as Hex
 import Control.Exception (try)
@@ -26,62 +26,59 @@ import Data.Text as T
 import Data.Text.Encoding
 import Data.UUID as UUID (toText)
 import Network.Wai (strictRequestBody)
-import Network.Wai.Responder
+import Web.Twain
 
-getPaymentForm :: Responder AppEnv IO a
+getPaymentForm :: RouteM AppEnv a
 getPaymentForm = do
-  env <- getEnv
+  appEnv <- env
   user <- Session.requireUser
-  let editUserUrl = appUrl env +> ["users", UUID.toText (userId user), "edit"]
-  when (isNothing (userEmail user)) $ send (redirect303 (renderUrl editUserUrl))
-  when (userPaid user) $ send (redirect303 (renderUrl (appUrl env)))
-  sendHtmlPage status200
-    $ withLocation (TitledLocation "Payment")
-    $ withHead (stripeJsHtml env)
-    $ withHtml
-    $ paymentFormHtml
+  let editUserUrl = rootUrl +> ["users", UUID.toText (userId user), "edit"]
+  when (isNothing (userEmail user)) $ send $ redirect303 (renderUrl editUserUrl)
+  when (userPaid user) $ send $ redirect303 "/"
+  sendHtmlPage status200 "Payment" $ paymentFormHtml appEnv
 
-getStripeCheckoutSessionId :: Responder AppEnv IO a
+getStripeCheckoutSessionId :: RouteM AppEnv a
 getStripeCheckoutSessionId = do
-  env <- getEnv
+  e <- env
   user <- Session.requireUser
-  let userUrl = appUrl env +> ["users", UUID.toText (userId user), "edit"]
+  let userUrl = appUrl e +> ["users", UUID.toText (userId user), "edit"]
   email <- maybe (send (redirect303 (renderUrl userUrl))) pure (userEmail user)
   if userPaid user
-    then send $ redirect302 (renderUrl (appUrl env))
+    then send $ redirect302 (renderUrl (appUrl e))
     else do
-      let key = encodeUtf8 (appSecret env)
+      let key = encodeUtf8 (appSecret e)
           msg = encodeUtf8 (UUID.toText (userId user) <> ":stripe")
           token = Hex.encode (Crypto.hmac_sha256 key msg)
           sessionCreate =
             StripeCheckoutSessionCreate
               { checkoutCancelUrl = userUrl,
-                checkoutSuccessUrl = appUrl env +> ["payments", "stripe", "success", token],
+                checkoutSuccessUrl = appUrl e +> ["payments", "stripe", "success", token],
                 checkoutCustomerEmail = email,
                 checkoutCustomerUserId = userId user,
-                checkoutPrice = appStripePriceId env
+                checkoutPrice = appStripePriceId e
               }
-      (StripeCheckoutSession id) <- catchStripeError $ reqStripe env sessionCreate
-      send $ plaintext status200 (BL.fromStrict (encodeUtf8 id))
+      (StripeCheckoutSession id) <- catchStripeError $ reqStripe e sessionCreate
+      send $ text id
 
-redirectToStripeCustomerPortal :: Responder AppEnv IO a
+redirectToStripeCustomerPortal :: RouteM AppEnv a
 redirectToStripeCustomerPortal = do
-  env <- getEnv
+  e <- env
   user <- Session.requireUser
-  let userUrl = appUrl env +> ["users", UUID.toText (userId user), "edit"]
+  let userUrl = appUrl e +> ["users", UUID.toText (userId user), "edit"]
   case userStripeCustomerId user of
     Nothing -> send (redirect303 (renderUrl userUrl))
     Just cid -> do
       let portalSessionCreate = StripeCustomerPortalSessionCreate cid userUrl
-      (StripeCustomerPortal url) <- catchStripeError $ reqStripe env portalSessionCreate
+      (StripeCustomerPortal url) <- catchStripeError $ reqStripe e portalSessionCreate
       send $ redirect303 (renderUrl url)
 
-verifyStripeCheckoutSuccess :: Text -> Responder AppEnv IO a
-verifyStripeCheckoutSuccess tokenP = do
-  env <- getEnv
+verifyStripeCheckoutSuccess :: RouteM AppEnv a
+verifyStripeCheckoutSuccess = do
+  e <- env
   user <- Session.requireUser
-  let userUrl = appUrl env +> ["users", UUID.toText (userId user), "edit"]
-  let key = encodeUtf8 (appSecret env)
+  tokenP <- param "token" :: RouteM AppEnv Text
+  let userUrl = appUrl e +> ["users", UUID.toText (userId user), "edit"]
+  let key = encodeUtf8 (appSecret e)
       msg = encodeUtf8 (UUID.toText (userId user) <> ":stripe")
       token = Hex.encode (Crypto.hmac_sha256 key msg)
   when (token /= tokenP) $ send (redirect303 (renderUrl userUrl))
@@ -89,8 +86,8 @@ verifyStripeCheckoutSuccess tokenP = do
   DB.exec $ User.save (user {userStatus = "active", userNewsletterId = Just newsletterId})
   send $ redirect303 (renderUrl userUrl)
 
-catchStripeError :: IO a -> Responder AppEnv IO a
-catchStripeError = (either (Error.getPlaintext :: StripeError -> Responder AppEnv IO a) pure =<<) . liftIO . try
+catchStripeError :: IO a -> RouteM AppEnv a
+catchStripeError = (either (Error.getPlaintext :: StripeError -> RouteM AppEnv a) pure =<<) . liftIO . try
 
 data StripeEvent = StripeEventSubscription StripeSubscription
 
@@ -107,34 +104,34 @@ instance FromJSON StripeEvent where
       "parsing StripeEvent failed, "
       (typeMismatch "Object" invalid)
 
-postStripeWebhook :: Responder AppEnv IO a
+postStripeWebhook :: RouteM AppEnv a
 postStripeWebhook = do
-  let invalidHeaderRes = plaintext status400 "invalid signature header"
-      missingHeaderRes = plaintext status400 "missing signature header"
-  env <- getEnv
-  sigH <- maybe (send missingHeaderRes) pure =<< getHeader "Stripe-Signature"
-  reqBody <- strictRequestBody <$> getRequest
+  let invalidHeaderRes = status status400 $ text "invalid signature header"
+      missingHeaderRes = status status400 $ text "missing signature header"
+  e <- env
+  sigH <- maybe (send missingHeaderRes) pure =<< header "Stripe-Signature"
+  reqBody <- strictRequestBody <$> request
   reqBodyBS <- BL.toStrict <$> liftIO reqBody
   let sigParts = fmap (T.drop 1) . T.break (== '=') <$> T.splitOn "," sigH
       sigField = "v1"
-      secret = encodeUtf8 (appStripeWebhookSecret env)
+      secret = encodeUtf8 (appStripeWebhookSecret e)
   ts <- maybe (send invalidHeaderRes) (pure . snd) $ L.find ((== "t") . fst) sigParts
   sig <- maybe (send invalidHeaderRes) (pure . snd) $ L.find ((== sigField) . fst) sigParts
   let payload = encodeUtf8 ts <> "." <> reqBodyBS
       hmac = Hex.encode $ Crypto.hmac_sha256 secret payload
   when (hmac /= sig) $ do
-    when (appDebug env) $ do
+    when (appDebug e) $ do
       liftIO $ do
         print "invalid signature"
         print $ "Computed signature: " <> hmac
         print $ "Stripe webhook signature: " <> sig
-    send (plaintext status400 "invalid signature")
+    send $ status status400 $ text "invalid signature"
   case eitherDecodeStrict reqBodyBS of
     Left e -> do
       liftIO $ putStrLn e
-      send (plaintext status204 "")
+      send $ status status204 $ text ""
     Right (StripeEventSubscription s) -> do
       let customerGet = StripeCustomerGet (stripeSubscriptionCustomerId s)
-      (c :: StripeCustomer) <- catchStripeError $ reqStripe env customerGet
+      (c :: StripeCustomer) <- catchStripeError $ reqStripe e customerGet
       DB.exec $ Stripe.updateUserStripeCustomer c s
-      send (plaintext status204 "")
+      send $ status status204 $ text ""

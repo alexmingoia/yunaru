@@ -9,57 +9,63 @@ import App.Model.Feed
 import Data.Maybe
 import Data.Text
 
-localEntryUrl :: AppEnv -> Entry -> URL
-localEntryUrl env e =
-  appUrl env +> ["feeds", renderUrl (entryFeedUrl e), "entries", renderUrl (entryUrl e)]
+localEntryUrl :: Entry -> URL
+localEntryUrl e =
+  rootUrl
+    +> [ "feeds",
+         renderUrl (entryFeedUrl e),
+         "entries",
+         renderUrl (entryUrl e)
+       ]
 
-canonicalEntryUrl :: AppEnv -> Entry -> URL
-canonicalEntryUrl env e =
+canonicalEntryUrl :: Entry -> URL
+canonicalEntryUrl e =
   if isRelative (entryUrl e)
-    then canonicalEntryFeedUrl env e +> ["entries", renderUrl (entryUrl e)]
+    then canonicalEntryFeedUrl e +> ["entries", renderUrl (entryUrl e)]
     else entryUrl e
 
-localEntryFeedUrl :: AppEnv -> Entry -> URL
-localEntryFeedUrl env e = appUrl env +> ["feeds", renderUrl (entryFeedUrl e)]
+localEntryFeedUrl :: Entry -> URL
+localEntryFeedUrl e = rootUrl +> ["feeds", renderUrl (entryFeedUrl e)]
 
-canonicalEntryFeedUrl :: AppEnv -> Entry -> URL
-canonicalEntryFeedUrl env e =
+canonicalEntryFeedUrl :: Entry -> URL
+canonicalEntryFeedUrl e =
   if isRelative (entryFeedUrl e)
-    then localEntryFeedUrl env e
+    then localEntryFeedUrl e
     else entryFeedUrl e
 
-localEntryAuthorUrl :: AppEnv -> EntryDetailed -> URL
-localEntryAuthorUrl env entryDtld =
+localEntryAuthorUrl :: EntryDetailed -> URL
+localEntryAuthorUrl entryDtld =
   let e = entryInfo entryDtld
    in if isJust (entryRebloggedBy e)
-        then appUrl env +> ["authors", renderUrl (entryAuthorUrl e)]
-        else localEntryFeedUrl env e
+        then rootUrl +> ["authors", renderUrl (entryAuthorUrl e)]
+        else localEntryFeedUrl e
 
-canonicalEntryAuthorUrl :: AppEnv -> EntryDetailed -> URL
-canonicalEntryAuthorUrl env entryDtld =
+canonicalEntryAuthorUrl :: EntryDetailed -> URL
+canonicalEntryAuthorUrl entryDtld =
   let e = entryInfo entryDtld
       a = entryAuthor entryDtld
    in if entryFeedUrl e == authorUrl a
-        then canonicalEntryFeedUrl env e
+        then canonicalEntryFeedUrl e
         else authorUrl a
 
-localAuthorUrl :: AppEnv -> Author -> URL
-localAuthorUrl e a = appUrl e +> ["authors", renderUrl (authorUrl a)]
+localAuthorUrl :: Author -> URL
+localAuthorUrl a = rootUrl +> ["authors", renderUrl (authorUrl a)]
 
-canonicalAuthorUrl :: AppEnv -> Author -> URL
-canonicalAuthorUrl e a =
+canonicalAuthorUrl :: Author -> URL
+canonicalAuthorUrl a =
   if isRelative (authorUrl a)
-    then localAuthorUrl e a
+    then localAuthorUrl a
     else authorUrl a
 
-authorDisplayName :: AppEnv -> Author -> Text
-authorDisplayName e a = fromMaybe (renderDisplayUrl (canonicalAuthorUrl e a)) (authorName a)
+localFeedUrl :: Feed -> URL
+localFeedUrl f = rootUrl +> ["feeds", renderUrl (feedUrl f)]
 
-localFeedUrl :: AppEnv -> Feed -> URL
-localFeedUrl env f = appUrl env +> ["feeds", renderUrl (feedUrl f)]
-
-canonicalFeedUrl :: AppEnv -> Feed -> URL
-canonicalFeedUrl env f =
+canonicalFeedUrl :: Feed -> URL
+canonicalFeedUrl f =
   if isRelative (feedUrl f)
-    then localFeedUrl env f
+    then localFeedUrl f
     else feedUrl f
+
+authorDisplayName :: Author -> Text
+authorDisplayName a =
+  fromMaybe (renderDisplayUrl (canonicalAuthorUrl a)) (authorName a)

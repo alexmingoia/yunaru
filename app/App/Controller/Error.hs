@@ -2,38 +2,36 @@
 
 module App.Controller.Error where
 
+import App.Controller.Page
 import App.Model.Env
-import App.View.Error
-import App.View.Page
 import Control.Exception
 import Control.Monad
-import qualified Data.ByteString.Lazy as BL
 import Data.Text
-import Data.Text.Encoding
 import Network.Wai
-import Network.Wai.Responder
+import Text.Blaze.Html (toHtml)
+import qualified Text.Blaze.Html5 as H
+import Web.Twain
 
 -- | Respond with an error page.
-get :: (Exception e) => e -> Responder AppEnv IO a
-get e = do
-  let msg = pack (displayException e)
-      status = errorStatus (Just e)
-      page = errorPage msg
-  sendHtmlPage status page
+get :: (Exception e) => e -> RouteM AppEnv a
+get err = do
+  let msg = pack (displayException err)
+  sendHtmlPage (errorStatus (Just err)) "Error" $
+    H.h1 (toHtml msg)
 
-getPlaintext :: (Exception e) => e -> Responder AppEnv IO a
-getPlaintext e = do
-  let msg = pack (displayException e)
-      status = errorStatus (Just e)
-  send $ plaintext status (BL.fromStrict (encodeUtf8 msg))
+getPlaintext :: (Exception e) => e -> RouteM AppEnv a
+getPlaintext err = do
+  let msg = pack (displayException err)
+  send $ status (errorStatus (Just err)) $ text msg
 
 -- | Construct a Response from exception.
 response :: AppEnv -> SomeException -> Response
-response env e =
-  let msg = pack (displayException (toAppError e))
-      status = errorStatus (Just e)
-      html = renderPage env Nothing (errorPage msg)
-   in responseLBS status [("Content-Type", "text/html; charset=utf-8")] html
+response env err =
+  let msg = pack (displayException (toAppError err))
+   in status (errorStatus (Just err))
+        $ html
+        $ renderPage (appName env) "Error" "" Nothing
+        $ H.h1 (toHtml msg)
 
 ignore :: AppEnv -> SomeException -> IO ()
 ignore env e = when (appDebug env) (putStrLn (displayException e))

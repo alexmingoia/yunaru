@@ -22,7 +22,7 @@ import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A
 
 followingsRecentEntryHtml env now userM pageSize beforeM err urlP followingsDtld = do
-  let formActionUrl = appUrl env +> ["followings"]
+  let formActionUrl = rootUrl +> ["followings"]
   H.form ! A.method "POST" ! A.action (urlValue formActionUrl) $ do
     whenJust err errorAlertHtml
     H.div ! A.class_ "form-controls-inline" $ do
@@ -42,13 +42,13 @@ followingsRecentEntryHtml env now userM pageSize beforeM err urlP followingsDtld
   when (pageSize == L.length followingsDtld) $ do
     let leastUpdatedAtM = feedUpdatedAt (followingFeed (L.minimum followingsDtld))
     whenJust leastUpdatedAtM $ \leastUpdatedAt -> do
-      let nextPageUrl = appUrl env +> ["followings"] ?> [("before", formatTime8601 leastUpdatedAt)]
+      let nextPageUrl = rootUrl +> ["followings"] ?> [("before", formatTime8601 leastUpdatedAt)]
       H.nav $ H.small $ do
         H.a
           ! A.href (urlValue nextPageUrl)
           ! A.class_ "button"
           $ "More followings →"
-  signupNoticeHtml env userM
+  signupNoticeHtml userM
 
 noFollowingsNoticeHtml = do
   H.p $ "Your followings will appear here, along with their most recent entry."
@@ -58,12 +58,12 @@ followingRecentEntrySnippetHtml env now followingDtld = do
       isMuted = followingMuted (followingInfo followingDtld)
       feed = followingFeed followingDtld
       author = followingAuthor followingDtld
-      feedDisplayUrl = renderDisplayUrl (canonicalFeedUrl env feed)
+      feedDisplayUrl = renderDisplayUrl (canonicalFeedUrl feed)
       feedDisplayName = fromMaybe (renderDisplayUrl (feedUrl feed)) (feedName feed <|> authorName author)
   H.div ! A.class_ "h-cite u-follow-of" $ do
     H.div ! A.class_ (if isJust (authorImageUrl author) then "has-image byline" else "byline") $ do
       whenJust (Image.cacheUrl env 128 128 True <$> authorImageUrl author) $ \imageUrl -> do
-        H.a ! A.href (urlValue (localFeedUrl env feed)) ! A.class_ "image" $ do
+        H.a ! A.href (urlValue (localFeedUrl feed)) ! A.class_ "image" $ do
           H.img
             ! A.class_ "u-photo"
             ! A.src (urlValue imageUrl)
@@ -73,20 +73,20 @@ followingRecentEntrySnippetHtml env now followingDtld = do
             ! A.alt (textValue feedDisplayName)
       if isNothing (feedName feed) || feedName feed == authorName author
         then do
-          H.a ! A.href (urlValue (localFeedUrl env feed)) ! A.class_ "name p-name" $ toHtml $ authorDisplayName env author
+          H.a ! A.href (urlValue (localFeedUrl feed)) ! A.class_ "name p-name" $ toHtml $ authorDisplayName author
         else do
-          H.a ! A.href (urlValue (localFeedUrl env feed)) ! A.class_ "name" $ do
-            H.span ! A.class_ "p-author" $ toHtml $ authorDisplayName env author
+          H.a ! A.href (urlValue (localFeedUrl feed)) ! A.class_ "name" $ do
+            H.span ! A.class_ "p-author" $ toHtml $ authorDisplayName author
             toHtml (": " :: Text)
             H.span ! A.class_ "p-name" $ toHtml feedDisplayName
       H.span ! A.class_ "hidden" $ " · "
       H.a ! A.href (urlValue (feedUrl feed)) ! A.class_ "u-url hidden" $ toHtml feedDisplayUrl
       when isMuted $ do
         H.span " · "
-        H.a ! A.href (urlValue (localFeedUrl env feed)) $ H.span $ "Muted"
+        H.a ! A.href (urlValue (localFeedUrl feed)) $ H.span $ "Muted"
       whenJust (entryPublishedAt =<< entryM) $ \publishedAt -> do
         H.span " · "
-        H.a ! A.href (urlValue (localFeedUrl env feed)) $ do
+        H.a ! A.href (urlValue (localFeedUrl feed)) $ do
           H.time
             ! A.datetime (textValue (formatTime8601 publishedAt))
             ! A.title (textValue (formatTimeHuman publishedAt))
@@ -98,7 +98,7 @@ followingRecentEntrySnippetHtml env now followingDtld = do
             Icon.reblog ! customAttribute "aria-label" "reblog"
             toHtml (" " :: Text)
           whenJust (entryName e) $ \name -> do
-            H.a ! A.href (urlValue (localEntryUrl env e)) $ toHtml name
+            H.a ! A.href (urlValue (localEntryUrl e)) $ toHtml name
             when (isJust (entrySummary e)) (toHtml (": " :: Text))
           whenJust (entrySummary e) $ \summary -> do
             preEscapedToHtml summary

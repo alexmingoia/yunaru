@@ -15,6 +15,7 @@ import Database.Selda.SqlType
 import Text.Blaze.Html (AttributeValue, textValue)
 import Text.URI hiding (relativeTo)
 import qualified Text.URI as URI
+import Web.Twain
 
 newtype URL = URL URI deriving (Show, Ord)
 
@@ -36,6 +37,9 @@ instance SqlType [URL] where
   fromSql (SqlString x) = catMaybes (parseUrl <$> T.splitOn "<>" x)
   fromSql _ = error "fromSql: unexpected type"
   defaultValue = mkLit []
+
+instance ParsableParam URL where
+  parseParam = mapLeft (pack . displayException) . parseUrl
 
 newtype URLException = URLException Text deriving (Eq, Show)
 
@@ -108,14 +112,8 @@ urlValue = textValue . renderUrl
 isRelative :: URL -> Bool
 isRelative (URL (URI _ auth _ _ _)) = isLeft auth
 
-urlScheme :: URL -> Maybe Text
-urlScheme (URL uri) = unRText <$> uriScheme uri
-
 urlAuthority :: URL -> Maybe Authority
 urlAuthority (URL uri) = either (const Nothing) Just (uriAuthority uri)
-
-urlPort :: URL -> Maybe Int
-urlPort (URL uri) = fromInteger . toInteger <$> (either (const Nothing) authPort $ uriAuthority uri)
 
 withHttp :: URL -> URL
 withHttp url@(URL (URI _ auth path query frag)) =
@@ -133,21 +131,14 @@ withoutUserInfo (URL (URI scheme (Right a) path query frag)) =
   URL $ URI scheme (Right (Authority Nothing (authHost a) Nothing)) path query frag
 withoutUserInfo url = url
 
-withEndingSlash :: URL -> URL
-withEndingSlash (URL (URI scheme auth (Just (False, path)) query frag)) =
-  URL (URI scheme auth (Just (True, path)) query frag)
-withEndingSlash url = url
-
-matchScheme :: URL -> URL -> URL
-matchScheme (URL (URI s _ _ _ _)) (URL (URI _ a p q f)) = URL $ URI s a p q f
-
 withoutEndingSlash :: URL -> URL
 withoutEndingSlash (URL (URI scheme auth (Just (True, path)) query frag)) =
   URL (URI scheme auth (Just (False, path)) query frag)
 withoutEndingSlash url = url
 
-withoutPath :: URL -> URL
-withoutPath (URL (URI scheme auth _ _ _)) = URL $ URI scheme auth Nothing [] Nothing
+-- Return "/" URL.
+rootUrl :: URL
+rootUrl = URL $ URI Nothing (Left True) Nothing [] Nothing
 
 -- Append path pieces to URL.
 appendPath :: URL -> [Text] -> URL
@@ -171,12 +162,6 @@ appendQuery (URL (URI scheme auth path query frag)) qs =
    in URL $ URI scheme auth path (query <> nqs) frag
 
 (?>) = appendQuery
-
-mapFragment :: URL -> Text -> URL
-mapFragment (URL (URI scheme auth path query _)) frag =
-  URL $ URI scheme auth path query (mkFragment frag)
-
-(#>) = mapFragment
 
 -- | Resolve URL relative to base URL. If base URL is not absolute, the reference URL is returned.
 relativeTo :: URL -> URL -> URL

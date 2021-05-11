@@ -5,6 +5,7 @@ module App.Model.Stripe where
 
 import App.Model.Env
 import App.Model.Selda
+import App.Model.User
 import Control.Exception
 import Control.Monad
 import Control.Monad.Fail

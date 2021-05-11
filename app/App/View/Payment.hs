@@ -1,6 +1,7 @@
 module App.View.Payment where
 
 import App.Model.Env
+import App.Model.User
 import Control.Monad (when)
 import Control.Monad.Extra (whenJust)
 import Data.Maybe
@@ -9,17 +10,17 @@ import Text.Blaze.Html ((!), toHtml)
 import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A
 
-paymentFormHtml = do
+paymentFormHtml env = do
   H.p "Redirecting you to payment page..."
+  stripeJsHtml env
   H.script "waitForScripts(redirectToCheckout);"
 
-signupNoticeHtml env userM =
+signupNoticeHtml userM =
   whenJust userM $ \u -> when (isNothing (userEmail u)) $ do
-    let signupUrl = appUrl env +> ["users", "new"]
     H.aside $ do
       H.p $ do
-        H.a ! A.href (urlValue signupUrl) $ "Create an account"
-        toHtml (" to save your followings for $33 per year. You'll also get an email you can use to read newsletters in your feed." :: Text)
+        H.a ! A.href "/users/new" $ "Create an account"
+        toHtml (" and save your followings for $33 per year. You'll also get an email you can use to read newsletters in your feed." :: Text)
 
 paymentIncompleteAlertHtml env = do
   let paymentUrl = appUrl env +> ["payments", "new"]

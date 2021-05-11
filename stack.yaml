@@ -49,8 +49,8 @@ extra-deps:
   commit: e995d8695c5d4c7479fe46955a9fe5b105a33753
 - git: git://github.com/alexmingoia/webmention
   commit: 97e580a2d3407bf707967748a0a9449132476e83
-- git: git://github.com/alexmingoia/wai-responder
-  commit: db6660f801f7add04d83f999bde4de7dbdea0ea4
+- git: git://github.com/alexmingoia/twain
+  commit: 8a2566aa217b46e934bff09d9873eead7ed5a12c
 - git: https://github.com/himura/twitter-conduit.git
   commit: fe9390577453d36760868c027cbc2c2c4f25c1ed
 - twitter-types-0.10.1@sha256:5ebed648815b96f54b0b1d3e86b3443d8900a86ce3ab885d71fb8c1ba5aacbc0,1568

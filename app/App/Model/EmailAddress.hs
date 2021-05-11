@@ -5,6 +5,7 @@ module App.Model.EmailAddress where
 import Data.Text as T
 import Database.Selda.SqlType
 import Text.Blaze.Html (AttributeValue, textValue)
+import Web.Twain
 
 newtype Email = Email Text deriving (Eq, Show)
 
@@ -18,6 +19,9 @@ instance SqlType Email where
   fromSql (SqlString x) = Email x
   fromSql _ = error "fromSql: unexpected type"
   defaultValue = error "email has no default SQL value"
+
+instance ParsableParam Email where
+  parseParam = maybe (Left "Invalid email.") Right . parseEmail
 
 parseEmail :: Text -> Maybe Email
 parseEmail t

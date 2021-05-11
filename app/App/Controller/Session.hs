@@ -3,72 +3,58 @@
 
 module App.Controller.Session where
 
+import App.Controller.Page
 import App.Model.Crypto
 import App.Model.Database as DB
 import App.Model.Env
 import App.Model.User as User
-import App.View.Page
 import App.View.Session
 import Control.Monad
-import Data.List as L
 import Data.Maybe
 import Data.Text.Encoding
 import Data.Time.Clock
 import qualified Data.UUID as UUID
 import qualified Data.UUID.V4 as UUIDv4
-import Network.HTTP.Types
-import Network.Wai
-import Network.Wai.Responder
 import Web.Cookie
+import Web.Twain
 
 authErr = Just (InputError "email" "Incorrect email or password.")
 
-getSigninForm :: Maybe AppError -> Responder AppEnv IO a
+getSigninForm :: Maybe AppError -> RouteM AppEnv a
 getSigninForm errM = do
   redirectIfRegisteredUser
-  e <- fromMaybe "" <$> getParam "email"
-  env <- getEnv
-  sendHtmlPage (errorStatus errM)
-    $ withLocation (TitledLocation "Sign In")
-    $ withHtml
-    $ signinFormHtml env errM e
+  email <- fromMaybe "" <$> paramMaybe "email"
+  sendHtmlPage (errorStatus errM) "Sign in" $
+    signinFormHtml errM email
 
-post :: Responder AppEnv IO a
+post :: RouteM AppEnv a
 post = do
   redirectIfRegisteredUser
-  env <- getEnv
-  email <- maybe (getSigninForm authErr) pure =<< (fmap Email) <$> getParam "email"
+  email <- maybe (getSigninForm authErr) pure =<< (fmap Email) <$> paramMaybe "email"
   u <- maybe (getSigninForm authErr) pure =<< DB.exec (User.findOneByEmail email)
-  p <- maybe (getSigninForm authErr) pure =<< getParam "password"
+  p <- maybe (getSigninForm authErr) pure =<< paramMaybe "password"
   when (not (User.verifyPassword u p)) (getSigninForm authErr)
-  let res = redirect303 (renderUrl (appUrl env))
   sessCookie <- createSessionCookie u
-  send (setCookie sessCookie res)
+  send $ withCookie' sessCookie $ redirect303 "/"
 
-getUser :: Responder AppEnv IO (Maybe User)
-getUser = appUser <$> getEnv
+getUser :: RouteM AppEnv (Maybe User)
+getUser = do
+  secret <- appSecret <$> env
+  sidM <- paramMaybe "sid"
+  let userIdM = UUID.fromText =<< decrypt secret =<< sidM
+  maybe (pure Nothing) (DB.exec . User.findOne) userIdM
 
-withUser :: AppEnv -> Request -> IO AppEnv
-withUser env req = do
-  let cookies = snd <$> L.find ((==) hCookie . fst) (requestHeaders req)
-      cookieM = decodeUtf8 . snd <$> (L.find ((==) "sid" . fst) . parseCookies =<< cookies)
-      userIdM = UUID.fromText =<< decrypt (appSecret env) =<< cookieM
-  userM <- maybe (pure Nothing) (DB.execEnv env . User.findOne) userIdM
-  return $ env {appUser = userM}
-
-requireUser :: Responder AppEnv IO User
+requireUser :: RouteM AppEnv User
 requireUser = do
-  env <- getEnv
-  let url = appUrl env +> ["sessions", "new"]
-  maybe (send (redirect302 (renderUrl url))) pure =<< getUser
+  maybe (send (redirect302 "/sessions/new")) pure =<< getUser
 
-redirectIfRegisteredUser :: Responder AppEnv IO ()
+redirectIfRegisteredUser :: RouteM AppEnv ()
 redirectIfRegisteredUser = do
   userM <- getUser
   let isRegistered = maybe False userRegistered userM
   when isRegistered (send (redirect302 "/"))
 
-getOrCreateUser :: Responder AppEnv IO User
+getOrCreateUser :: RouteM AppEnv User
 getOrCreateUser = do
   userM <- getUser
   case userM of
@@ -80,15 +66,15 @@ getOrCreateUser = do
       return user
     Just user -> return user
 
-createSessionCookie :: User -> Responder AppEnv IO SetCookie
+createSessionCookie :: User -> RouteM AppEnv SetCookie
 createSessionCookie user = do
-  env <- getEnv
+  secret <- appSecret <$> env
   now <- liftIO getCurrentTime
   let cookieValue =
         maybe
           "encrypt-failure"
           encodeUtf8
-          (encrypt (appSecret env) (UUID.toText (userId user)))
+          (encrypt secret (UUID.toText (userId user)))
       cookie =
         defaultSetCookie
           { setCookieName = "sid",
@@ -99,9 +85,10 @@ createSessionCookie user = do
           }
   return cookie
 
-delete :: Responder AppEnv IO ()
+delete :: RouteM AppEnv ()
 delete = do
-  maybe (send (redirect302 "/")) pure =<< getCookie "sid"
+  sidM <- paramMaybe "sid" :: RouteM AppEnv (Maybe Text)
+  when (isNothing sidM) $ send $ redirect302 "/"
   now <- liftIO getCurrentTime
   let cookie =
         defaultSetCookie
@@ -111,4 +98,4 @@ delete = do
             setCookieHttpOnly = True,
             setCookieExpires = Just $ addUTCTime (-10000) now
           }
-  send $ setCookie cookie (redirect302 "/")
+  send $ withCookie' cookie (redirect302 "/")

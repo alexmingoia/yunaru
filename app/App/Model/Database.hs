@@ -17,11 +17,11 @@ import Control.Exception
 import Control.Monad
 import Control.Monad.IO.Class
 import Data.Pool
-import Database.Selda hiding (def)
+import Database.Selda hiding (def, text)
 import Database.Selda.Backend
 import Database.Selda.PostgreSQL
 import Database.Selda.SqlType
-import Network.Wai.Responder
+import Web.Twain
 
 openConn :: AppEnv -> IO AppDBConn
 openConn e = pgOpen (appDbName e `on` appDbHost e `auth` (appDbUser e, appDbPass e))
@@ -32,7 +32,7 @@ closeConn = seldaClose
 -- | Run IO action with database connected environment.
 withConn :: (AppEnv -> IO a) -> IO a
 withConn act = do
-  env <- getAppEnv
+  env <- readAppEnv
   bracket (openConn env) closeConn $ \conn -> act (env {appDbConn = Just (Left conn)})
 
 -- | Initialize connection pool for environment.
@@ -42,9 +42,9 @@ withPool env = do
   return (env {appDbConn = Just (Right pool)})
 
 -- | Execute query within Responder monadic context, responding with errors if encountered.
-exec :: SeldaT PG IO a -> Responder AppEnv IO a
+exec :: SeldaT PG IO a -> RouteM AppEnv a
 exec q = do
-  env <- getEnv
+  env <- env
   liftIO (execEnv env q)
 
 -- | Execute query with a given database connection.

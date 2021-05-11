@@ -40,6 +40,7 @@
         - name: Build application bundle
           run: |
             npm i postcss postcss-cli postcss-preset-env cssnano
+            rm assets/screen.min.css
             node_modules/postcss-cli/bin/postcss assets/screen.css3.css -u postcss-preset-env -u cssnano --no-map -o assets/screen.min.css
             stack build --no-terminal --system-ghc
             mkdir -p bin
