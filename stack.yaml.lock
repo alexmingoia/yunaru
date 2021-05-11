@@ -62,6 +62,17 @@ packages:
     git: git://github.com/alexmingoia/webmention
     commit: 97e580a2d3407bf707967748a0a9449132476e83
 - completed:
+    name: twain
+    version: 1.0.0.0
+    git: git://github.com/alexmingoia/twain
+    pantry-tree:
+      size: 696
+      sha256: b85ad90acb2dc4ac05f41150cac2b85eef840b6f3aef4d52993eeb2efa63fbe2
+    commit: 8a2566aa217b46e934bff09d9873eead7ed5a12c
+  original:
+    git: git://github.com/alexmingoia/twain
+    commit: 8a2566aa217b46e934bff09d9873eead7ed5a12c
+- completed:
     name: twitter-conduit
     version: 0.5.1
     git: https://github.com/himura/twitter-conduit.git
