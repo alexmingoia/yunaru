@@ -35,7 +35,7 @@ followingEntriesHtml env now userM pageSize beforeM entriesDtld = do
             ! A.href (urlValue nextPageUrl)
             ! A.class_ "button"
             $ "More entries →"
-  signupNoticeHtml userM
+  signupNoticeHtml env userM
 
 endOfEntriesNoticeHtml = do
   H.p $ "You've reached the end of your feed. This may be a good time for a break."

@@ -15,12 +15,13 @@ paymentFormHtml env = do
   stripeJsHtml env
   H.script "waitForScripts(redirectToCheckout);"
 
-signupNoticeHtml userM =
+signupNoticeHtml env userM =
   whenJust userM $ \u -> when (isNothing (userEmail u)) $ do
     H.aside $ do
       H.p $ do
+        toHtml $ toTitle (appName env) <> " is free to try. "
         H.a ! A.href "/users/new" $ "Create an account"
-        toHtml (" and save your followings for $33 per year. You'll also get an email you can use to read newsletters in your feed." :: Text)
+        toHtml (" for $33/year to save your followings. You'll also get an email address you can use to read newsletters in your feed." :: Text)
 
 paymentIncompleteAlertHtml env = do
   let paymentUrl = appUrl env +> ["payments", "new"]

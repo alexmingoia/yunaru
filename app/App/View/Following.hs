@@ -48,7 +48,7 @@ followingsRecentEntryHtml env now userM pageSize beforeM err urlP followingsDtld
           ! A.href (urlValue nextPageUrl)
           ! A.class_ "button"
           $ "More followings →"
-  signupNoticeHtml userM
+  signupNoticeHtml env userM
 
 noFollowingsNoticeHtml = do
   H.p $ "Your followings will appear here, along with their most recent entry."
