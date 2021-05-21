@@ -10,6 +10,8 @@ if (supportsQuerySelectors && supportsToLocaleString && supportsFormData) {
   }
 }
 
+window.addEventListener('pageshow', clearButtonLoading);
+
 function enhance() {
   /* Display timestamps formatted in browser's locale */
   var timeElems = document.getElementsByTagName('time');
@@ -41,15 +43,17 @@ function enhance() {
   });
 
   /* Reset form buttons on page unload. Otherwise, using back button will show invalid button text. */
-  window.addEventListener('unload', function(e) {
-    var buttons = document.querySelectorAll('button[type=submit]');
-    for (var i = 0, l = buttons.length; i < l; i++) {
-      if (buttons[i].hasAttribute('disabled')) {
-        buttons[i].removeAttribute('disabled');
-        buttons[i].className = buttons[i].className.replace(' is-loading', '');
-      }
+  window.addEventListener('unload', clearButtonLoading);
+}
+
+function clearButtonLoading() {
+  var buttons = document.querySelectorAll('button[type=submit]');
+  for (var i = 0, l = buttons.length; i < l; i++) {
+    if (buttons[i].hasAttribute('disabled')) {
+      buttons[i].removeAttribute('disabled');
+      buttons[i].className = buttons[i].className.replace(' is-loading', '');
     }
-  });
+  }
 }
 
 function doXHR(url, data, cb) {
