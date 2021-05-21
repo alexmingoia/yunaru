@@ -24,22 +24,23 @@ import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A
 
 feedHtml env now feedDtld entriesDtld beforeM pageSize = do
-  feedHeaderHtml env feedDtld
-  forM_ entriesDtld (entrySnippetHtml env now)
-  when (isJust beforeM && pageSize /= L.length entriesDtld) (endOfFeedNoticeHtml feedDtld)
-  when (isNothing beforeM && L.null entriesDtld) (noEntriesNoticeHtml feedDtld)
-  when (pageSize == L.length entriesDtld) $ do
-    let leastPublishedAtM = entryRebloggedOrPublishedAt (entryInfo (L.minimum entriesDtld))
-    whenJust leastPublishedAtM $ \ts -> do
-      let nextPageUrl = localFeedUrl (feedInfo feedDtld) ?> [("before", formatTime8601 ts)]
-      H.nav $ H.small $ do
-        H.a ! A.href (urlValue nextPageUrl) ! A.class_ "button" $ "More entries →"
+  H.div ! A.class_ "h-feed" $ do
+    feedHeaderHtml env feedDtld
+    forM_ entriesDtld (entrySnippetHtml env now)
+    when (isJust beforeM && pageSize /= L.length entriesDtld) (endOfFeedNoticeHtml feedDtld)
+    when (isNothing beforeM && L.null entriesDtld) (noEntriesNoticeHtml feedDtld)
+    when (pageSize == L.length entriesDtld) $ do
+      let leastPublishedAtM = entryRebloggedOrPublishedAt (entryInfo (L.minimum entriesDtld))
+      whenJust leastPublishedAtM $ \ts -> do
+        let nextPageUrl = localFeedUrl (feedInfo feedDtld) ?> [("before", formatTime8601 ts)]
+        H.nav $ H.small $ do
+          H.a ! A.href (urlValue nextPageUrl) ! A.class_ "button" $ "More entries →"
 
 feedHeaderHtml env feedDtld = do
   let feed = feedInfo feedDtld
       followingM = feedFollowing feedDtld
       author = feedAuthor feedDtld
-  H.header ! A.class_ "feed-profile" $ do
+  H.header $ do
     let authorImageSrcM = Image.cacheUrl env 128 128 True <$> authorImageUrl author
     whenJust authorImageSrcM $ \src -> do
       H.div ! A.class_ "image" $ H.img ! A.src (urlValue src) ! A.width "64" ! A.height "64" ! A.class_ "u-photo"
