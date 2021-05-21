@@ -1,5 +1,4 @@
 delete from users u
-using authors a
-left join followings fg on fg.user_id = a.user_id
-left join entries e on e.author_url = a.url
-where a.user_id = u.id and e.url is null and fg.user_id is null;
+using users u1
+left join followings fg on fg.user_id = u1.id
+where u1.status = 'unpaid' and u1.id = u.id and fg.user_id is null;
