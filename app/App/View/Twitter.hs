@@ -27,7 +27,12 @@ tweetBlockquoteAuthorHtml s = do
   let u = statusUser s
       id = statusId s
       name = userName u
-      url = fromJust $ parseUrl $ "https://twitter.com/" <> userScreenName u <> "/status/" <> T.pack (show id)
+      url =
+        fromJust $ parseUrl $
+          "https://twitter.com/"
+            <> userScreenName u
+            <> "/status/"
+            <> T.pack (show id)
   H.p $ do
     H.a ! A.href (urlValue url) $ toHtml $ "@" <> name
     toHtml (":" :: Text)

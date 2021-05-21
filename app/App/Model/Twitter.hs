@@ -86,7 +86,7 @@ entryFromTwStatus feed author s =
       featuredStatusId = pack (show (statusId featuredStatus))
       featuredAuthor = fromMaybe author (authorFromTwUser . statusUser <$> statusRetweetedStatus s)
       originalAuthor = author
-      media = fromMaybe [] ((fmap entityBody) . exeMedia <$> statusExtendedEntities featuredStatus)
+      media = fromMaybe [] ((fmap entityBody) . exeMedia <$> statusExtendedEntities (fromMaybe featuredStatus quotedStatusM))
       imageUrls = catMaybes (parseUrl . TWT.exeMediaUrlHttps <$> (L.filter (matchTwImageType . TWT.exeType) media))
       videoUrls = catMaybes (parseUrl . TWT.exeMediaUrlHttps <$> (L.filter ((== "video") . TWT.exeType) media))
       summary = withoutRetweetPrefix (withUrls featuredStatus)
