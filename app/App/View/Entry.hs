@@ -126,7 +126,8 @@ entrySnippetHtml env now entryDtld = do
       entryClass = if hasMedia then "h-entry" else "h-entry has-media"
   H.article ! A.class_ (textValue entryClass) $ H.div ! A.class_ (textValue citeClass) $ do
     entryBylineHtml env now entryDtld
-    mediaHtml env entry
+    videoHtml env entry
+    imagesHtml env entry
     whenJust nameOrContentM $ \nameOrContent -> case nameOrContent of
       Left name -> do
         H.div ! A.class_ "name-and-summary" $ do
@@ -145,14 +146,17 @@ entrySnippetHtml env now entryDtld = do
               H.p $ H.a ! A.href (urlValue (canonicalEntryUrl entry)) $ "Read more →"
           else do
             H.div ! A.class_ "e-content" $ preEscapedToHtml content
+    audioHtml entry
 
-mediaHtml env entry = do
+imagesHtml env entry = do
   when (not (L.null (entryImageUrls entry))) $ do
     H.div ! A.class_ "media images" $ forM_ (entryImageUrls entry) $ \imageUrl -> do
       H.a
         ! A.class_ "image"
         ! A.href (urlValue imageUrl)
         $ H.img ! A.src (urlValue (Image.cacheUrl env 800 800 False imageUrl)) ! A.class_ "u-photo"
+
+videoHtml env entry = do
   when (not (L.null (entryVideoUrls entry))) $ do
     H.div ! A.class_ "media video" $ forM_ (entryVideoUrls entry) $ \videoUrl -> do
       if Twitter.isTwitterProfileUrl (entryFeedUrl entry)
@@ -167,6 +171,8 @@ mediaHtml env entry = do
         else do
           H.video ! A.src (urlValue videoUrl) ! A.controls mempty ! A.class_ "u-video" $ do
             H.a ! A.href (urlValue videoUrl) $ "Download video"
+
+audioHtml entry = do
   when (not (L.null (entryAudioUrls entry))) $ do
     H.div ! A.class_ "media audio" $ forM_ (entryAudioUrls entry) $ \audioUrl -> do
       H.audio ! A.src (urlValue audioUrl) ! A.controls mempty ! A.class_ "u-audio" $ do
