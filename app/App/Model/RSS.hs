@@ -102,7 +102,10 @@ entriesFromXmlFeed env baseUrl feed xmlFeed =
 -- | Extract entry from RSS/Atom feed item.
 entryFromFeedItem :: AppEnv -> URL -> Feed -> XMLFeed.Item -> Maybe Entry
 entryFromFeedItem env baseUrl feed item = do
-  externalEntryUrl <- flip relativeTo baseUrl <$> (parseUrl =<< XMLFeedQuery.getItemLink item)
+  let itemLinkM =
+        XMLFeedQuery.getItemLink item
+          <|> (snd <$> XMLFeedQuery.getItemId item)
+  externalEntryUrl <- flip relativeTo baseUrl <$> (parseUrl =<< itemLinkM)
   let name = nullifyText =<< XMLFeedQuery.getItemTitle item
       summary = nullifyText =<< XMLFeedQuery.getItemSummary item
       content = nullifyText =<< (XMLFeedQuery.getItemContent item <|> XMLFeedQuery.getItemDescription item)
