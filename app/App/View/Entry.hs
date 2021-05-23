@@ -42,7 +42,7 @@ endOfEntriesNoticeHtml = do
 
 noFollowingEntriesNoticeHtml = do
   H.h1 "A peaceful news feed."
-  H.p "Follow RSS, Twitter, newsletters, and more. No ads, no algorithm, no distractions."
+  H.p "Follow RSS, Twitter, newsletters, and more. No ads, algorithm, or distractions."
   H.form ! A.method "POST" ! A.action "/followings" $ do
     H.div ! A.class_ "form-controls-inline" $ do
       H.div ! A.class_ "form-control" $ do

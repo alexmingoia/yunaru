@@ -15,7 +15,7 @@ import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A
 
 appDesc :: Text
-appDesc = "A peaceful news feed. Follow RSS, Twitter, newsletters, and more. No ads, no algorithm, no distractions."
+appDesc = "A peaceful news feed. Follow RSS, Twitter, and newsletters. No ads, algorithm, or distractions."
 
 renderPage :: Text -> Text -> Text -> Maybe User -> Html -> BL.ByteString
 renderPage appName title reqPath userM html = renderHtml $ do

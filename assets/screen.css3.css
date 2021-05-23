@@ -135,7 +135,7 @@ html {
 body {
   background-color: var(--background);
   color: var(--text-normal);
-  font-family: sans-serif;
+  font-family: ui-sans-serif, -apple-system, sans-serif;
   font-size: 16px;
   line-height: 1.5;
   padding: 0 1.25rem 1rem 1.25rem;
@@ -254,7 +254,7 @@ h1, h2, h3, h4, h5 {
 }
 
 h1 {
-  font-size: 1.5625rem;
+  font-size: 2rem;
   line-height: 1.2;
 }
 
@@ -263,7 +263,7 @@ header > h1, article > h1 {
 }
 
 main > h1 {
-  font-size: 1.6875rem;
+  font-size: 2.5rem;
   font-weight: 800;
   text-align: center;
 }
