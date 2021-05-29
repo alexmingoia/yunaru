@@ -22,7 +22,7 @@ userNewFormHtml env userM emailM passwordM confirmPasswordM errM = do
           Just id -> appUrl env +> ["users", UUID.toText id] ?> [("_method", "PUT")]
   stripeJsHtml env
   H.section $ do
-    H.h1 "Create Account"
+    H.h1 "Welcome."
     H.p $ do
       toHtml (appName env)
       toHtml (" costs " :: Text)

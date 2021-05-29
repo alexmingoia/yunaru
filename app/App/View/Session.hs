@@ -12,7 +12,7 @@ import qualified Text.Blaze.Html5.Attributes as A
 
 signinFormHtml :: Maybe AppError -> Text -> Html
 signinFormHtml errM emailP = do
-  H.header ! A.class_ "hidden" $ H.h1 "Sign in"
+  H.h1 "Welcome back."
   H.form ! A.method "POST" ! A.action "/sessions" ! A.class_ "centered" $ do
     whenJust errM errorAlertHtml
     H.div ! A.class_ "form-control" $ do
