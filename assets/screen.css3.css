@@ -874,3 +874,7 @@ div[role="alert"] .button.outline.is-loading::before {
     border-radius: 0px;
   }
 }
+
+a {
+  word-wrap: break-word;
+}
