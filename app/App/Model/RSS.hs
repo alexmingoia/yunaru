@@ -57,7 +57,8 @@ parseFeedEntries env htmlAuthorM url xml = do
             feedRecentEntryUrl = Nothing,
             feedUpdatedAt = Nothing,
             feedImportedAt = Nothing,
-            feedImportError = Nothing
+            feedImportError = Nothing,
+            feedCreatedAt = Nothing
           }
       entries = entriesFromXmlFeed env url feed xmlFeed
       entriesDtld = (\p -> EntryDetailed p author Nothing) <$> entries

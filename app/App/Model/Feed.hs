@@ -25,7 +25,8 @@ data Feed
         feedRecentEntryUrl :: Maybe URL,
         feedUpdatedAt :: Maybe UTCTime,
         feedImportedAt :: Maybe UTCTime,
-        feedImportError :: Maybe ImportError
+        feedImportError :: Maybe ImportError,
+        feedCreatedAt :: Maybe UTCTime
       }
   deriving (Generic, Show)
 

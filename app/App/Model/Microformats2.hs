@@ -159,7 +159,8 @@ feedFromMf2Json url author json =
           feedRecentEntryUrl = Nothing,
           feedUpdatedAt = Nothing,
           feedImportedAt = Nothing,
-          feedImportError = Nothing
+          feedImportError = Nothing,
+          feedCreatedAt = Nothing
         }
 
 -- | Extract entries from JSON encoded MF2 h-entries.

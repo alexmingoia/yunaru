@@ -81,7 +81,8 @@ timestampEntries feedDtld entriesDtld = do
             (feedInfo fd)
               { feedRecentEntryUrl = entryUrl <$> latestEntry,
                 feedUpdatedAt = entryRebloggedOrPublishedAt =<< latestEntry,
-                feedImportedAt = Just now
+                feedImportedAt = Just now,
+                feedCreatedAt = feedCreatedAt (feedInfo fd) <|> Just now
               },
           feedAuthor = (feedAuthor fd) {authorImportedAt = Just now}
         }

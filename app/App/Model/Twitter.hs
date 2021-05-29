@@ -63,7 +63,8 @@ importFeedEntries env url = do
             feedRecentEntryUrl = Nothing,
             feedUpdatedAt = Nothing,
             feedImportedAt = Nothing,
-            feedImportError = Nothing
+            feedImportError = Nothing,
+            feedCreatedAt = Nothing
           }
       entriesDtld = catMaybes (entryFromTwStatus feed author <$> timeline)
   FeedDetailed.timestampEntries (feedDetailed feed author) entriesDtld

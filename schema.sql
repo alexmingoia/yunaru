@@ -42,7 +42,8 @@ create table feeds (
   import_error text,
   recent_entry_url text,
   updated_at timestamptz,
-  imported_at timestamptz
+  imported_at timestamptz,
+  created_at timestampz
 );
 
 alter table feeds add constraint feeds_url_excl exclude using btree (lower(url) with =);

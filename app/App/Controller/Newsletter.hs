@@ -63,7 +63,8 @@ postNewsletterWebhook = do
             feedRecentEntryUrl = Just eUrl,
             feedUpdatedAt = Just now,
             feedImportedAt = Nothing,
-            feedImportError = Nothing
+            feedImportError = Nothing,
+            feedCreatedAt = Nothing
           }
       content = wrapInParagraph <$> nullifyText (sanitizeAndProxyImageHtml appEnv baseUrl body)
       summary = summaryFromHtml (Just summaryLength) <$> (nullifyText =<< content)
