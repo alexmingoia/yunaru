@@ -1,13 +1,20 @@
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module App.Model.EmailAddress where
 
+import Data.Aeson as JSON
 import Data.Text as T
 import Database.Selda.SqlType
+import GHC.Generics
 import Text.Blaze.Html (AttributeValue, textValue)
 import Web.Twain
 
-newtype Email = Email Text deriving (Eq, Show)
+newtype Email = Email Text deriving (Eq, Show, Generic)
+
+instance FromJSON Email
+
+instance ToJSON Email
 
 lowercaseEmail (Email e) = Email (T.toLower e)
 

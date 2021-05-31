@@ -10,8 +10,8 @@ import App.Model.Env
 import App.Model.User as User
 import App.View.Session
 import Control.Monad
+import Data.Aeson as JSON
 import Data.Maybe
-import Data.Text.Encoding
 import Data.Time.Clock
 import qualified Data.UUID as UUID
 import qualified Data.UUID.V4 as UUIDv4
@@ -40,9 +40,14 @@ post = do
 getUser :: RouteM AppEnv (Maybe User)
 getUser = do
   secret <- appSecret <$> env
-  sidM <- paramMaybe "sid"
-  let userIdM = UUID.fromText =<< decrypt secret =<< sidM
-  maybe (pure Nothing) (DB.exec . User.findOne) userIdM
+  sessionM <- paramMaybe "session"
+  case sessionM of
+    Nothing -> do
+      sidM <- paramMaybe "sid"
+      let userIdM = UUID.fromText =<< decryptHex secret =<< sidM
+      maybe (pure Nothing) (DB.exec . User.findOne) userIdM
+    Just encryptedJson -> do
+      return (decodeStrict =<< decrypt secret encryptedJson)
 
 requireUser :: RouteM AppEnv User
 requireUser = do
@@ -70,14 +75,12 @@ createSessionCookie :: User -> RouteM AppEnv SetCookie
 createSessionCookie user = do
   secret <- appSecret <$> env
   now <- liftIO getCurrentTime
-  let cookieValue =
-        maybe
-          "encrypt-failure"
-          encodeUtf8
-          (encrypt secret (UUID.toText (userId user)))
+  let userWithoutPass = user {userPassword = Nothing}
+      userJson = encode userWithoutPass
+      cookieValue = fromMaybe "encrypt-failure" $ encrypt secret userJson
       cookie =
         defaultSetCookie
-          { setCookieName = "sid",
+          { setCookieName = "session",
             setCookieValue = cookieValue,
             setCookiePath = Just "/",
             setCookieHttpOnly = True,
@@ -88,14 +91,13 @@ createSessionCookie user = do
 delete :: RouteM AppEnv ()
 delete = do
   sidM <- paramMaybe "sid" :: RouteM AppEnv (Maybe Text)
-  when (isNothing sidM) $ send $ redirect302 "/"
   now <- liftIO getCurrentTime
-  let cookie =
+  let expireCookie =
         defaultSetCookie
-          { setCookieName = "sid",
+          { setCookieName = if isJust sidM then "sid" else "session",
             setCookieValue = "",
             setCookiePath = Just "/",
             setCookieHttpOnly = True,
             setCookieExpires = Just $ addUTCTime (-10000) now
           }
-  send $ withCookie' cookie (redirect302 "/")
+  send $ withCookie' expireCookie (redirect302 "/")

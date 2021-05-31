@@ -9,6 +9,7 @@ import App.Model.EmailAddress
 import App.Model.Selda
 import Control.Monad
 import Crypto.KDF.BCrypt as BCrypt
+import Data.Aeson as JSON
 import Data.Maybe
 import Data.Text
 import Data.Text.Encoding
@@ -30,6 +31,10 @@ data User
   deriving (Generic)
 
 instance SqlRow User
+
+instance FromJSON User
+
+instance ToJSON User
 
 users :: Table User
 users = tableFieldMod "users" [] (toFieldName "user")

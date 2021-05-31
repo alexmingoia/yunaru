@@ -13,6 +13,8 @@ import Crypto.MAC.HMAC (HMAC, hmac, hmacGetDigest)
 import qualified Data.ByteArray as BA
 import qualified Data.ByteString as B
 import Data.ByteString (ByteString)
+import Data.ByteString.Base58
+import qualified Data.ByteString.Lazy as BL
 import Data.Either.Combinators
 import Data.Text
 import qualified Data.Text.Encoding as TE
@@ -29,14 +31,21 @@ initCipher (Key k) = case eitherCryptoError (cipherInit k) of
   Left _ -> Nothing
   Right c -> return c
 
-encrypt :: Text -> Text -> Maybe Text
+encrypt :: Text -> BL.ByteString -> Maybe B.ByteString
 encrypt secret msg = do
   cipher <- initCipher (initKey (undefined :: AES256) secret)
-  let cipherbs = ctrCombine cipher nullIV (TE.encodeUtf8 msg)
-  return (Hex.encode cipherbs)
+  let cipherbs = ctrCombine cipher nullIV (BL.toStrict msg)
+  return (encodeBase58 bitcoinAlphabet cipherbs)
 
-decrypt :: Text -> Text -> Maybe Text
-decrypt secret hex = do
+decrypt :: Text -> Text -> Maybe B.ByteString
+decrypt secret base58 = do
+  cipher <- initCipher (initKey (undefined :: AES256) secret)
+  ciphertext <- decodeBase58 bitcoinAlphabet (TE.encodeUtf8 base58)
+  let plainbs = ctrCombine cipher nullIV ciphertext
+  return plainbs
+
+decryptHex :: Text -> Text -> Maybe Text
+decryptHex secret hex = do
   cipher <- initCipher (initKey (undefined :: AES256) secret)
   ciphertext <- rightToMaybe $ Hex.decode hex
   let plainbs = ctrCombine cipher nullIV ciphertext
