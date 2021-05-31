@@ -18,50 +18,57 @@ import qualified Text.Blaze.Html5.Attributes as A
 userNewFormHtml env userM emailM passwordM confirmPasswordM errM = do
   let formActionUrl =
         case userId <$> userM of
-          Nothing -> appUrl env +> ["users"]
-          Just id -> appUrl env +> ["users", UUID.toText id] ?> [("_method", "PUT")]
+          Nothing ->
+            appUrl env +> ["users"]
+          Just id ->
+            appUrl env +> ["users", UUID.toText id] ?> [("_method", "PUT")]
   stripeJsHtml env
   H.section $ do
     H.h1 "Welcome."
     H.p $ do
-      toHtml (appName env)
+      toHtml $ toTitle (appName env)
       toHtml (" costs " :: Text)
       H.strong "$33 per year"
       toHtml (" and includes unlimited followings. You'll also get an email you can use to read newsletters in your feed." :: Text)
     H.p $ toHtml $ toTitle (appName env) <> " is independently owned. There's no tracking, no ads, and your data is kept private."
     H.hr
     whenJust errM errorAlertHtml
-    H.form ! A.method "POST" ! A.action (urlValue formActionUrl) ! A.enctype "multipart/form-data" ! A.onsubmit "submitFormAndRedirectToCheckout(event);" $ do
-      H.div ! A.class_ "form-control" $ do
-        H.label ! A.for "email" $ "Email Address"
-        H.input
-          ! A.name "email"
-          ! A.type_ "email"
-          ! A.value (textValue (maybe "" renderEmail emailM))
-          ! A.required mempty
-          ! A.placeholder "you@domain.com"
-          ! A.class_ (errorClass "email" "input" errM)
-        H.p $ H.small "We'll never share your e-mail, or send you spam."
-      H.div ! A.class_ "form-control" $ do
-        H.label ! A.for "password" $ "Password"
-        H.input
-          ! A.name "password"
-          ! A.type_ "password"
-          ! A.required mempty
-          ! A.placeholder "Password"
-          ! A.value (textValue (fromMaybe "" passwordM))
-          ! A.class_ (errorClass "password" "input" errM)
-      H.div ! A.class_ "form-control" $ do
-        H.label ! A.for "password-confirm" $ "Confirm password"
-        H.input
-          ! A.name "password-confirm"
-          ! A.type_ "password"
-          ! A.required mempty
-          ! A.placeholder "Confirm password"
-          ! A.value (textValue (fromMaybe "" confirmPasswordM))
-          ! A.class_ (errorClass "password-confirm" "input" errM)
-      H.div ! A.class_ "form-control" $ do
-        H.button ! A.type_ "submit" $ "Create account"
+    H.form
+      ! A.method "POST"
+      ! A.action (urlValue formActionUrl)
+      ! A.enctype "multipart/form-data"
+      ! A.onsubmit "submitFormAndRedirectToCheckout(event);"
+      $ do
+        H.div ! A.class_ "form-control" $ do
+          H.label ! A.for "email" $ "Email Address"
+          H.input
+            ! A.name "email"
+            ! A.type_ "email"
+            ! A.value (textValue (maybe "" renderEmail emailM))
+            ! A.required mempty
+            ! A.placeholder "you@domain.com"
+            ! A.class_ (errorClass "email" "input" errM)
+          H.p $ H.small "We'll never share your e-mail, or send you spam."
+        H.div ! A.class_ "form-control" $ do
+          H.label ! A.for "password" $ "Password"
+          H.input
+            ! A.name "password"
+            ! A.type_ "password"
+            ! A.required mempty
+            ! A.placeholder "Password"
+            ! A.value (textValue (fromMaybe "" passwordM))
+            ! A.class_ (errorClass "password" "input" errM)
+        H.div ! A.class_ "form-control" $ do
+          H.label ! A.for "password-confirm" $ "Confirm password"
+          H.input
+            ! A.name "password-confirm"
+            ! A.type_ "password"
+            ! A.required mempty
+            ! A.placeholder "Confirm password"
+            ! A.value (textValue (fromMaybe "" confirmPasswordM))
+            ! A.class_ (errorClass "password-confirm" "input" errM)
+        H.div ! A.class_ "form-control" $ do
+          H.button ! A.type_ "submit" $ "Create account"
 
 userEditFormHtml env user pendingEmailM emailM errM = do
   stripeJsHtml env

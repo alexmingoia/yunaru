@@ -58,17 +58,16 @@ followingRecentEntrySnippetHtml env now followingDtld = do
       isMuted = followingMuted (followingInfo followingDtld)
       feed = followingFeed followingDtld
       author = followingAuthor followingDtld
-      feedDisplayUrl = renderDisplayUrl (canonicalFeedUrl feed)
       feedDisplayName = fromMaybe (renderDisplayUrl (feedUrl feed)) (feedName feed <|> authorName author)
   H.div ! A.class_ "h-cite u-follow-of" $ do
-    H.div ! A.class_ (if isJust (authorImageUrl author) then "has-image byline" else "byline") $ do
+    H.div ! A.class_ "byline" $ do
       whenJust (Image.cacheUrl env 128 128 True <$> authorImageUrl author) $ \imageUrl -> do
         H.a ! A.href (urlValue (localFeedUrl feed)) ! A.class_ "image" $ do
           H.img
             ! A.class_ "u-photo"
             ! A.src (urlValue imageUrl)
-            ! A.width "26"
-            ! A.height "26"
+            ! A.width "32"
+            ! A.height "32"
             ! customAttribute "aria-hidden" "true"
             ! A.alt (textValue feedDisplayName)
       if isNothing (feedName feed) || feedName feed == authorName author
@@ -79,8 +78,6 @@ followingRecentEntrySnippetHtml env now followingDtld = do
             H.span ! A.class_ "p-author" $ toHtml $ authorDisplayName author
             toHtml (": " :: Text)
             H.span ! A.class_ "p-name" $ toHtml feedDisplayName
-      H.span ! A.class_ "hidden" $ " · "
-      H.a ! A.href (urlValue (feedUrl feed)) ! A.class_ "u-url hidden" $ toHtml feedDisplayUrl
       when isMuted $ do
         H.span " · "
         H.a ! A.href (urlValue (localFeedUrl feed)) $ H.span $ "Muted"
@@ -91,27 +88,26 @@ followingRecentEntrySnippetHtml env now followingDtld = do
             ! A.datetime (textValue (formatTime8601 publishedAt))
             ! A.title (textValue (formatTimeHuman publishedAt))
             $ toHtml (formatTimeAgoCompact now publishedAt)
-    H.div ! A.class_ "name-and-summary" $ do
-      case entryM of
-        Nothing -> do
-          H.p ! A.class_ "p-summary" $ "No recent entry."
-        Just e -> do
-          H.p ! A.class_ "p-summary" $ do
-            when (isJust (entryRebloggedAt e)) $ do
-              Icon.reblog ! customAttribute "aria-label" "reblog"
-              toHtml (" " :: Text)
-            whenJust (entryName e) $ \name -> do
-              H.a ! A.href (urlValue (localEntryUrl e)) $ toHtml name
-              when (isJust (entrySummary e)) (toHtml (": " :: Text))
-            whenJust (entrySummary e) $ \summary -> do
-              preEscapedToHtml summary
-              toHtml (" " :: Text)
-            when (not (L.null (entryImageUrls e))) $ do
-              forM_ (entryImageUrls e) $ \imageUrl -> do
-                H.a ! A.href (urlValue imageUrl) $ toHtml $ renderDisplayUrl imageUrl
-            when (not (L.null (entryVideoUrls e))) $ do
-              forM_ (entryVideoUrls e) $ \videoUrl -> do
-                H.a ! A.href (urlValue videoUrl) $ toHtml $ renderDisplayUrl videoUrl
-            when (not (L.null (entryAudioUrls e))) $ do
-              forM_ (entryAudioUrls e) $ \audioUrl -> do
-                H.a ! A.href (urlValue audioUrl) $ toHtml $ renderDisplayUrl audioUrl
+    case entryM of
+      Nothing -> do
+        H.p ! A.class_ "p-summary" $ "No recent entry."
+      Just e -> do
+        H.p ! A.class_ "p-summary" $ do
+          when (isJust (entryRebloggedAt e)) $ do
+            Icon.reblog ! customAttribute "aria-label" "reblog"
+            toHtml (" " :: Text)
+          whenJust (entryName e) $ \name -> do
+            H.a ! A.href (urlValue (localEntryUrl e)) $ toHtml name
+            when (isJust (entrySummary e)) (toHtml (": " :: Text))
+          whenJust (entrySummary e) $ \summary -> do
+            preEscapedToHtml summary
+            toHtml (" " :: Text)
+          when (not (L.null (entryImageUrls e))) $ do
+            forM_ (entryImageUrls e) $ \imageUrl -> do
+              H.a ! A.href (urlValue imageUrl) $ toHtml $ renderDisplayUrl imageUrl
+          when (not (L.null (entryVideoUrls e))) $ do
+            forM_ (entryVideoUrls e) $ \videoUrl -> do
+              H.a ! A.href (urlValue videoUrl) $ toHtml $ renderDisplayUrl videoUrl
+          when (not (L.null (entryAudioUrls e))) $ do
+            forM_ (entryAudioUrls e) $ \audioUrl -> do
+              H.a ! A.href (urlValue audioUrl) $ toHtml $ renderDisplayUrl audioUrl

@@ -56,37 +56,27 @@ noFollowingEntriesNoticeHtml = do
       H.div ! A.class_ "form-control" $ do
         H.button ! A.type_ "submit" $ "Follow"
 
-entryBylineHtml env now entryDtld = do
+entryBylineHtml now entryDtld = do
   let entry = entryInfo entryDtld
       author = entryAuthor entryDtld
       authorHref = localEntryAuthorUrl entryDtld
-      authorCanonicalHref = canonicalEntryAuthorUrl entryDtld
-  H.div ! A.class_ ("byline p-author h-card" <> if isJust (authorImageUrl author) then " has-image" else "") $ do
-    whenJust (Image.cacheUrl env 128 128 True <$> authorImageUrl author) $ \imageUrl -> do
-      H.a ! A.href (urlValue authorHref) ! A.class_ "image" $ do
-        H.img
-          ! A.class_ "u-photo"
-          ! A.src (urlValue imageUrl)
-          ! A.width "26"
-          ! A.height "26"
-          ! customAttribute "aria-hidden" "true"
-          ! A.alt (textValue (authorDisplayName author))
+  H.div ! A.class_ "byline p-author h-card" $ do
     H.a
       ! A.href (urlValue authorHref)
       ! A.class_ "p-name"
       $ toHtml (authorDisplayName author)
-    H.span ! A.class_ "hidden" $ " · "
-    H.a ! A.href (urlValue authorCanonicalHref) ! A.class_ "u-url hidden" $ do
-      toHtml (renderDisplayUrl authorCanonicalHref)
     whenJust (entryReblogAuthor entryDtld) $ \a -> do
-      let reblogAuthorDisplayName = fromMaybe (renderDisplayUrl (authorUrl a)) (authorName a)
-          reblogAuthorHref = localAuthorUrl a
+      let reblogName = fromMaybe (renderDisplayUrl (authorUrl a)) (authorName a)
+          reblogHref = localAuthorUrl a
       toHtml (" " :: Text)
       Icon.reblog ! customAttribute "aria-label" "reblogged by"
       toHtml (" " :: Text)
-      H.a ! A.href (urlValue reblogAuthorHref) ! A.class_ "reblogged-by" $ toHtml reblogAuthorDisplayName
+      H.a
+        ! A.href (urlValue reblogHref)
+        ! A.class_ "reblogged-by"
+        $ toHtml reblogName
     whenJust (entryPublishedAt entry) $ \publishedAt -> do
-      H.span " · "
+      H.span " • "
       H.a ! A.href (urlValue (canonicalEntryUrl entry)) $ do
         H.time
           ! A.class_ "dt-published"
@@ -95,13 +85,41 @@ entryBylineHtml env now entryDtld = do
           ! A.title (textValue (formatTimeHuman publishedAt))
           $ toHtml (formatTimeAgoCompact now publishedAt)
 
+entrySnippetHtml env now entryDtld = do
+  let entry = entryInfo entryDtld
+      nameOrContentM =
+        (Left <$> entryName entry) <|> (Right <$> entryContent entry)
+          <|> (Right <$> entrySummary entry)
+      isCite = isJust (entryReblogAuthor entryDtld)
+  H.article ! A.class_ "h-entry" $ do
+    H.div ! A.class_ (if isCite then "h-cite u-repost-of" else "h-cite") $ do
+      whenJust nameOrContentM $ \nameOrContent -> case nameOrContent of
+        Left name -> do
+          H.h1 ! A.class_ "p-name" $ do
+            H.a
+              ! A.class_ "u-url"
+              ! A.href (urlValue (canonicalEntryUrl entry))
+              $ toHtml name
+          entryBylineHtml now entryDtld
+          whenJust (entrySummary entry) $ \summary -> do
+            H.p ! A.class_ "p-summary" $ do
+              H.a
+                ! A.href (urlValue (localEntryUrl entry))
+                $ preEscapedToHtml summary
+        Right content -> do
+          entryBylineHtml now entryDtld
+          H.div ! A.class_ "e-content" $ preEscapedToHtml content
+      videoHtml env entry
+      imagesHtml env entry
+      audioHtml entry
+
 entryHtml env now entryDtld = do
   let entry = entryInfo entryDtld
   H.article ! A.class_ "h-entry" $ do
     whenJust (entryName entry) $ \name -> do
       H.h1 ! A.class_ "p-name" $ do
         H.a ! A.class_ "u-url" ! A.href (urlValue (canonicalEntryUrl entry)) $ toHtml name
-    entryBylineHtml env now entryDtld
+    entryBylineHtml now entryDtld
     whenJust (entryContent entry) $ \content -> do
       H.div ! A.class_ "e-content" $ preEscapedToHtml content
     H.hr
@@ -115,38 +133,6 @@ externalEntryNoticeHtml entryDtld = do
       toHtml ("This entry originally appeared at " :: Text)
       H.a ! A.href (urlValue href) $ toHtml $ renderDisplayUrl href
       toHtml (", and may be a summary or abridged version." :: Text)
-
-entrySnippetHtml env now entryDtld = do
-  let entry = entryInfo entryDtld
-      nameOrContentM =
-        (Left <$> entryName entry) <|> (Right <$> entryContent entry)
-          <|> (Right <$> entrySummary entry)
-      citeClass = if isJust (entryReblogAuthor entryDtld) then "h-cite u-repost-of" else "h-cite"
-      hasMedia = L.null (entryImageUrls entry <|> entryVideoUrls entry)
-      entryClass = if hasMedia then "h-entry" else "h-entry has-media"
-  H.article ! A.class_ (textValue entryClass) $ H.div ! A.class_ (textValue citeClass) $ do
-    entryBylineHtml env now entryDtld
-    videoHtml env entry
-    imagesHtml env entry
-    whenJust nameOrContentM $ \nameOrContent -> case nameOrContent of
-      Left name -> do
-        H.div ! A.class_ "name-and-summary" $ do
-          H.h1 ! A.class_ "p-name" $ do
-            H.a ! A.class_ "u-url" ! A.href (urlValue (canonicalEntryUrl entry)) $ toHtml name
-          whenJust (entrySummary entry) $ \summary -> do
-            H.p ! A.class_ "p-summary" $ do
-              if isJust (entryImportedAt entry)
-                then H.a ! A.href (urlValue (localEntryUrl entry)) $ preEscapedToHtml summary
-                else preEscapedToHtml summary
-      Right content -> do
-        if maybe False ((>= summaryLength) . T.length) (entrySummary entry) && T.length content >= 560
-          then do
-            H.div ! A.class_ "e-content" $ do
-              preEscapedToHtml (truncateHTML summaryLength content)
-              H.p $ H.a ! A.href (urlValue (canonicalEntryUrl entry)) $ "Read more →"
-          else do
-            H.div ! A.class_ "e-content" $ preEscapedToHtml content
-    audioHtml entry
 
 imagesHtml env entry = do
   when (not (L.null (entryImageUrls entry))) $ do

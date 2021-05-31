@@ -24,17 +24,16 @@ import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A
 
 feedHtml env now feedDtld entriesDtld beforeM pageSize = do
-  H.div ! A.class_ "h-feed" $ do
-    feedHeaderHtml env feedDtld
-    forM_ entriesDtld (entrySnippetHtml env now)
-    when (isJust beforeM && pageSize /= L.length entriesDtld) (endOfFeedNoticeHtml feedDtld)
-    when (isNothing beforeM && L.null entriesDtld) (noEntriesNoticeHtml feedDtld)
-    when (pageSize == L.length entriesDtld) $ do
-      let leastPublishedAtM = entryRebloggedOrPublishedAt (entryInfo (L.minimum entriesDtld))
-      whenJust leastPublishedAtM $ \ts -> do
-        let nextPageUrl = localFeedUrl (feedInfo feedDtld) ?> [("before", formatTime8601 ts)]
-        H.nav $ H.small $ do
-          H.a ! A.href (urlValue nextPageUrl) ! A.class_ "button" $ "More entries →"
+  feedHeaderHtml env feedDtld
+  forM_ entriesDtld (entrySnippetHtml env now)
+  when (isJust beforeM && pageSize /= L.length entriesDtld) (endOfFeedNoticeHtml feedDtld)
+  when (isNothing beforeM && L.null entriesDtld) (noEntriesNoticeHtml feedDtld)
+  when (pageSize == L.length entriesDtld) $ do
+    let leastPublishedAtM = entryRebloggedOrPublishedAt (entryInfo (L.minimum entriesDtld))
+    whenJust leastPublishedAtM $ \ts -> do
+      let nextPageUrl = localFeedUrl (feedInfo feedDtld) ?> [("before", formatTime8601 ts)]
+      H.nav $ H.small $ do
+        H.a ! A.href (urlValue nextPageUrl) ! A.class_ "button" $ "More entries →"
 
 feedHeaderHtml env feedDtld = do
   let feed = feedInfo feedDtld
