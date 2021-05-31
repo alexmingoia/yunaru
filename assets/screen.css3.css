@@ -738,8 +738,8 @@ div[role="alert"] .button.outline.is-loading::before {
 .h-entry {
   font-size: .9375rem;
   font-weight: 300;
-  margin: 1.5rem 0;
-  padding: 0 0 .5rem 0;
+  margin: 1.25rem 0;
+  padding: 0 0 .25rem 0;
   border-bottom: var(--border);
 }
 
