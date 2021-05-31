@@ -35,7 +35,11 @@ importFeedsJob = do
       handle (Error.ignore env) $ handle (saveImportError env feed) $ do
         when (appDebug env) $ putStrLn $ T.unpack $
           "Importing entries at " <> renderUrl (feedUrl feed)
-        (ufd, eds) <- RemoteFeed.importEntries env (RemoteFeed.fromFeed feed)
+        (ufd, eds) <-
+          RemoteFeed.importEntries
+            env
+            (feedUrl feed)
+            (Just (feedFormat feed))
         let uf = feedInfo ufd
         -- Update feed URL if different from previous feed URL (redirected or changed).
         when (feedUrl uf /= feedUrl feed) $ do

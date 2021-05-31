@@ -42,10 +42,9 @@ post = do
       invalidUrlError = InputError "url" "The URL you entered is not valid."
   urlP <- maybe (getRecentEntryList (Just missingUrlError)) pure =<< paramMaybe "url"
   url <- maybe (getRecentEntryList (Just invalidUrlError)) pure (parseInputUrl urlP)
-  let remoteFeed = RemoteFeed.fromUrl url
   (fd, eds) <-
     either (getRecentEntryList . Just) pure
-      =<< liftIO (try (RemoteFeed.importEntries appEnv remoteFeed))
+      =<< liftIO (try (RemoteFeed.importEntries appEnv url Nothing))
   DB.exec (FeedDetailed.save fd)
   DB.exec (EntryDetailed.saveAll eds)
   let following =

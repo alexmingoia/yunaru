@@ -12,21 +12,20 @@ import App.Model.Twitter as Twitter
 import Control.Applicative
 import Control.Exception
 
-data RemoteFeed = RemoteFeed URL (Maybe FeedFormat)
-
-fromUrl :: URL -> RemoteFeed
-fromUrl url = RemoteFeed url Nothing
-
-fromFeed :: Feed -> RemoteFeed
-fromFeed f = RemoteFeed (feedUrl f) (Just (feedFormat f))
-
--- | Import feed and entries from URL.
-importEntries :: AppEnv -> RemoteFeed -> IO (FeedDetailed, [EntryDetailed])
-importEntries env (RemoteFeed url (Just TwitterFeedFormat)) = Twitter.importFeedEntries env url
-importEntries env (RemoteFeed url (Just MF2FeedFormat)) = Microformats2.importFeedEntries env url
-importEntries env (RemoteFeed url (Just EmailFeedFormat)) = Microformats2.importFeedEntries env url
-importEntries env (RemoteFeed url (Just _)) = RSS.importFeedEntries env Nothing url
-importEntries env (RemoteFeed url Nothing) =
+importEntries ::
+  AppEnv ->
+  URL ->
+  Maybe FeedFormat ->
+  IO (FeedDetailed, [EntryDetailed])
+importEntries env url (Just TwitterFeedFormat) =
+  Twitter.importFeedEntries env url
+importEntries env url (Just MF2FeedFormat) =
+  Microformats2.importFeedEntries env url
+importEntries env url (Just EmailFeedFormat) =
+  Microformats2.importFeedEntries env url
+importEntries env url (Just _) =
+  RSS.importFeedEntries env Nothing url
+importEntries env url Nothing =
   if Twitter.isProfileUrl url
     then Twitter.importFeedEntries env url
     else do
@@ -40,7 +39,9 @@ importEntries env (RemoteFeed url Nothing) =
             Left (ImportError _ _) -> do
               -- Follow any rel="alternative" XML feed URL.
               -- If no <link> found, try /feed (default RSS URL for WordPress)
-              let xmlFeedUrlM = Microformats2.extractXmlFeedUrl finalUrl body <|> Just (finalUrl +> ["feed"])
+              let xmlFeedUrlM =
+                    Microformats2.extractXmlFeedUrl finalUrl body
+                      <|> Just (finalUrl +> ["feed"])
               case xmlFeedUrlM of
                 Nothing -> throwIO (ImportError url NoFeedFound)
                 Just xmlFeedUrl -> do
