@@ -121,7 +121,7 @@ html, body, header, main, footer, section, form, nav, h1, h2, h3, h4, h5, figure
 /* Modifiers */
 
 .hidden { display: none !important; }
-small, .small {
+small {
   color: var(--text-lighter);
   font-size: .8125rem;
 }
@@ -164,10 +164,17 @@ body > header {
 body > header nav {
   margin: 0 auto;
   max-width: 36rem;
+  font-size: 1rem;
 }
 
 a.logo {
   margin-left: -.5rem;
+}
+
+body > header nav li:last-child .button {
+  font-size: .8125rem;
+  margin-left: 0.625rem;
+  margin-right: .5rem;
 }
 
 @media (hover: hover) {
@@ -202,6 +209,7 @@ nav {
   justify-content: space-between;
   align-items: center;
   text-align: center;
+  font-size: .8125rem;
   margin: 1rem 0;
 }
 
@@ -476,15 +484,12 @@ form.centered button {
 
 .form-controls-inline {
   display: flex;
-  margin: 1rem -.25rem 2rem -.25rem;
-}
-
-.form-controls-inline > * {
-  margin: 0 .25rem;
+  margin: 1rem 0;
 }
 
 .form-controls-inline .form-control:first-child {
-  flex: 1 0 auto;
+  flex-grow: 1;
+  margin-right: .25rem;
 }
 
 .form-control textarea, .form-control .input {
@@ -493,6 +498,7 @@ form.centered button {
 
 label {
   color: var(--text-light);
+  font-size: .9375rem;
   display: block;
   margin: 0 0 .25rem 0;
 }

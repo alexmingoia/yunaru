@@ -32,7 +32,7 @@ feedHtml env now feedDtld entriesDtld beforeM pageSize = do
     let leastPublishedAtM = entryRebloggedOrPublishedAt (entryInfo (L.minimum entriesDtld))
     whenJust leastPublishedAtM $ \ts -> do
       let nextPageUrl = localFeedUrl (feedInfo feedDtld) ?> [("before", formatTime8601 ts)]
-      H.nav $ H.small $ do
+      H.nav $ do
         H.a ! A.href (urlValue nextPageUrl) ! A.class_ "button" $ "More entries →"
 
 feedHeaderHtml env feedDtld = do
@@ -99,13 +99,12 @@ feedFollowButtonHtml followingM feedDtld = do
     H.form
       ! A.method "POST"
       ! A.action (urlValue followFormAction)
-      ! A.class_ "small"
       ! customAttribute "data-xhr" "true"
       ! customAttribute "data-xhr-success-label" (if isFollowing then "Follow" else "Unfollow")
       ! customAttribute "data-xhr-success-action" (urlValue followFormActionXHR)
       $ do
         H.input ! A.type_ "hidden" ! A.name "redirect_url" ! A.value (urlValue (localFeedUrl feed))
-        H.button ! A.type_ "submit" ! A.class_ "button outline" $ if isFollowing then "Unfollow" else "Follow"
+        H.small $ H.button ! A.type_ "submit" ! A.class_ "button outline" $ if isFollowing then "Unfollow" else "Follow"
 
 feedMuteButtonHtml followingM feedDtld = do
   let feed = feedInfo feedDtld
@@ -116,14 +115,13 @@ feedMuteButtonHtml followingM feedDtld = do
     H.form
       ! A.method "POST"
       ! A.action (urlValue muteFormAction)
-      ! A.class_ "small"
       ! customAttribute "data-xhr" "true"
       ! customAttribute "data-xhr-success-label" (if isMuted then "Mute" else "Unmute")
       ! customAttribute "data-xhr-success-action" (urlValue muteFormAction)
       $ do
         H.input ! A.type_ "hidden" ! A.name "redirect_url" ! A.value (urlValue (localFeedUrl feed))
         H.input ! A.type_ "hidden" ! A.name "muted" ! A.value (textValue (if isMuted then "False" else "True"))
-        H.button ! A.type_ "submit" ! A.class_ "button outline" $ if isMuted then "Unmute" else "Mute"
+        H.small $ H.button ! A.type_ "submit" ! A.class_ "button outline" $ if isMuted then "Unmute" else "Mute"
 
 noEntriesNoticeHtml feedDtld = do
   H.p $ toHtml $

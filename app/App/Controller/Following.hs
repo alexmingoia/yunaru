@@ -32,7 +32,7 @@ getRecentEntryList err = do
   fds <- maybe (pure []) (DB.exec . FollowingDetailed.find pageSize beforeM . userId) userM
   now <- liftIO getCurrentTime
   sendHtmlPage (errorStatus err) "Following" $
-    followingsRecentEntryHtml appEnv now userM pageSize beforeM err urlP fds
+    followingsRecentEntryHtml appEnv now pageSize beforeM err urlP fds
 
 post :: RouteM AppEnv a
 post = do

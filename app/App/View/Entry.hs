@@ -23,19 +23,17 @@ import qualified Text.Blaze.Html5.Attributes as A
 
 followingEntriesHtml env now userM pageSize beforeM entriesDtld = do
   when (isNothing beforeM && L.null entriesDtld) noFollowingEntriesNoticeHtml
-  H.div ! A.class_ "h-feed" $ do
-    forM_ entriesDtld (entrySnippetHtml env now)
-    when (isJust beforeM && pageSize /= L.length entriesDtld) endOfEntriesNoticeHtml
-    when (pageSize == L.length entriesDtld) $ do
-      let leastPublishedAtM = entryRebloggedOrPublishedAt (entryInfo (L.minimum entriesDtld))
-      whenJust leastPublishedAtM $ \leastPublishedAt -> do
-        let nextPageUrl = rootUrl ?> [("before", formatTime8601 leastPublishedAt)]
-        H.nav $ H.small $ do
-          H.a
-            ! A.href (urlValue nextPageUrl)
-            ! A.class_ "button"
-            $ "More entries →"
-  signupNoticeHtml env userM
+  forM_ entriesDtld (entrySnippetHtml env now)
+  when (isJust beforeM && pageSize /= L.length entriesDtld) endOfEntriesNoticeHtml
+  when (pageSize == L.length entriesDtld) $ do
+    let leastPublishedAtM = entryRebloggedOrPublishedAt (entryInfo (L.minimum entriesDtld))
+    whenJust leastPublishedAtM $ \leastPublishedAt -> do
+      let nextPageUrl = rootUrl ?> [("before", formatTime8601 leastPublishedAt)]
+      H.nav $ do
+        H.a
+          ! A.href (urlValue nextPageUrl)
+          ! A.class_ "button"
+          $ "More entries →"
 
 endOfEntriesNoticeHtml = do
   H.p $ "You've reached the end of your feed. This may be a good time for a break."
@@ -113,7 +111,7 @@ entrySnippetHtml env now entryDtld = do
       imagesHtml env entry
       audioHtml entry
 
-entryHtml env now entryDtld = do
+entryHtml now entryDtld = do
   let entry = entryInfo entryDtld
   H.article ! A.class_ "h-entry" $ do
     whenJust (entryName entry) $ \name -> do

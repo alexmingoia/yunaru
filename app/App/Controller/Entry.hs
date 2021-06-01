@@ -24,9 +24,7 @@ get = do
   feedUrl <- maybe NotFound.get pure (parseUrl feedUrlP)
   url <- maybe NotFound.get pure (parseUrl entryUrlP)
   entryDtld <- maybe NotFound.get pure =<< (DB.exec (EntryDetailed.findOne feedUrl url))
-  appEnv <- env
-  sendHtmlPage status200 (entryPageTitle entryDtld) $
-    entryHtml appEnv now entryDtld
+  sendHtmlPage status200 (entryPageTitle entryDtld) $ entryHtml now entryDtld
 
 getFollowing :: Maybe AppError -> RouteM AppEnv a
 getFollowing err = do

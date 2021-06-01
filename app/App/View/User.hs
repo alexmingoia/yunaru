@@ -28,9 +28,8 @@ userNewFormHtml env userM emailM passwordM confirmPasswordM errM = do
     H.p $ do
       toHtml $ toTitle (appName env)
       toHtml (" costs " :: Text)
-      H.strong "$33 per year"
-      toHtml (" and includes unlimited followings. You'll also get an email you can use to read newsletters in your feed." :: Text)
-    H.p $ toHtml $ toTitle (appName env) <> " is independently owned. There's no tracking, no ads, and your data is kept private."
+      H.strong "$33/year"
+      toHtml (". You get unlimited followings and an email you can use to follow newsletters. There's no tracking, no ads, and your data is kept private." :: Text)
     H.hr
     whenJust errM errorAlertHtml
     H.form

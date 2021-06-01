@@ -5,8 +5,10 @@ module App.View.Page where
 import App.Model.Env
 import App.Model.User
 import App.View.Icon as Icon
+import Control.Monad
 import Control.Monad.Zip (mzip)
 import qualified Data.ByteString.Lazy as BL
+import Data.Maybe
 import Data.Text as T
 import Data.UUID as UUID
 import Text.Blaze.Html ((!), Html, customAttribute, textValue, toHtml)
@@ -84,6 +86,12 @@ pageHeader appName reqPath userM =
                 ! isActive reqPath signInHref
                 ! A.title "Sign in"
               $ Icon.signIn ! H.customAttribute "aria-label" "Sign in"
+            when (isJust userM) $ do
+              H.li $ do
+                H.a
+                  ! A.href "/users/new"
+                  ! A.class_ "button outline"
+                  $ "Save Feed"
           Just (_, u) -> do
             let uid = UUID.toText (userId u)
             H.li $ do

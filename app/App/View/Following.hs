@@ -10,7 +10,6 @@ import App.Model.Image as Image
 import App.View.Error
 import App.View.Icon as Icon
 import App.View.Language
-import App.View.Payment
 import App.View.URL
 import Control.Applicative
 import Control.Monad.Extra
@@ -21,7 +20,7 @@ import Text.Blaze.Html ((!), customAttribute, preEscapedToHtml, textValue, toHtm
 import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A
 
-followingsRecentEntryHtml env now userM pageSize beforeM err urlP followingsDtld = do
+followingsRecentEntryHtml env now pageSize beforeM err urlP followingsDtld = do
   let formActionUrl = rootUrl +> ["followings"]
   H.form ! A.method "POST" ! A.action (urlValue formActionUrl) $ do
     whenJust err errorAlertHtml
@@ -39,19 +38,27 @@ followingsRecentEntryHtml env now userM pageSize beforeM err urlP followingsDtld
         H.button ! A.type_ "submit" $ "Follow"
   forM_ followingsDtld (followingRecentEntrySnippetHtml env now)
   when (isNothing beforeM && L.null followingsDtld) noFollowingsNoticeHtml
+  when (L.length followingsDtld == 1) firstFollowingNoticeHtml
   when (pageSize == L.length followingsDtld) $ do
     let leastUpdatedAtM = feedUpdatedAt (followingFeed (L.minimum followingsDtld))
     whenJust leastUpdatedAtM $ \leastUpdatedAt -> do
       let nextPageUrl = rootUrl +> ["followings"] ?> [("before", formatTime8601 leastUpdatedAt)]
-      H.nav $ H.small $ do
+      H.nav $ do
         H.a
           ! A.href (urlValue nextPageUrl)
           ! A.class_ "button"
           $ "More followings →"
-  signupNoticeHtml env userM
 
 noFollowingsNoticeHtml = do
   H.p $ "Your followings will appear here, along with their most recent entry."
+
+firstFollowingNoticeHtml = do
+  H.p $ H.small $ do
+    toHtml ("Your followings are listed above with their most recent post. Visit your " :: Text)
+    H.a ! A.href "/" ! A.class_ "icon-left" $ do
+      Icon.newspaper
+      H.span "News Feed"
+    toHtml (" to see all posts." :: Text)
 
 followingRecentEntrySnippetHtml env now followingDtld = do
   let entryM = followingRecentEntry followingDtld
