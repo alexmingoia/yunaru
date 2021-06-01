@@ -57,14 +57,14 @@
     --text-lighter: hsl(213, 5%, 62%);
     --text-placeholder: hsl(213, 5%, 35%);
 
-    --foreground: hsl(213, 10%, 10%);
-    --background: hsl(213, 10%, 10%);
+    --foreground: hsl(213, 5%, 10%);
+    --background: hsl(213, 5%, 7%);
     --background-darker: hsl(213, 10%, 4%);
     --border-color: hsl(213, 10%, 16%);
     --border-color-darker: hsl(213, 10%, 20%);
     --border: 1px solid var(--border-color);
 
-    --input-background: hsl(213, 10%, 8%);
+    --input-background: var(--foreground);
     --input-border: 1px solid var(--border-color-darker);
     --input-border-active: 1px solid var(--text-lighter);
     --input-shadow-focus: inset 0 0 0 1px var(--text-lighter);
@@ -179,7 +179,6 @@ a.logo {
 
 main > header {
   border-bottom: 1px solid var(--border-color);
-  font-weight: 300;
 }
 
 /* Section */
@@ -737,7 +736,6 @@ div[role="alert"] .button.outline.is-loading::before {
 
 .h-entry {
   font-size: .9375rem;
-  font-weight: 300;
   margin: 1.25rem 0;
   padding: 0 0 .25rem 0;
   border-bottom: var(--border);
@@ -823,7 +821,6 @@ div[role="alert"] .button.outline.is-loading::before {
 
 .u-follow-of {
   font-size: .9375rem;
-  font-weight: 300;
   margin: 1rem 0;
   padding: 0;
   border-bottom: var(--border);
