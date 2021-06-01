@@ -487,9 +487,12 @@ form.centered button {
   margin: 1rem 0;
 }
 
-.form-controls-inline .form-control:first-child {
-  flex-grow: 1;
+.form-controls-inline > *:first-child {
   margin-right: .25rem;
+}
+
+.form-controls-inline > .form-control:first-child {
+  flex-grow: 1;
 }
 
 .form-control textarea, .form-control .input {
