@@ -12,9 +12,9 @@ function submitFormAndRedirectToCheckout(event) {
       doXHR(formUrl, formData, function(err, _, status) {
         if (err) {
           console.log(err);
-          return window.location.href = '/users/new';
+          return form.submit();
         }
-        redirectToCheckout();
+        redirectToCheckout(formData);
       });
     });
   }
@@ -29,10 +29,10 @@ function waitForScripts(cb) {
   }, 500);
 }
 
-function redirectToCheckout() {
+function redirectToCheckout(formData) {
   var stripe = Stripe(stripeKey);
 
-  doXHR('/payments/stripe/checkout-sessions', null, function(err, id, status) {
+  doXHR('/payments/stripe/checkout-sessions', formData, function(err, id, status) {
     if (err) {
       console.log(err);
       return window.location.href = '/users/new';

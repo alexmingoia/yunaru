@@ -53,10 +53,7 @@ getEditForm id errM = do
     userEditFormHtml appEnv user pendingEmailM emailM errM
 
 post :: RouteM AppEnv ()
-post = do
-  user <- Session.getOrCreateUser
-  sessionCookie <- Session.createSessionCookie user
-  send . withCookie' sessionCookie =<< patchUser user
+post = send =<< patchUser =<< Session.getOrCreateUser
 
 put :: RouteM AppEnv ()
 put = do
@@ -88,13 +85,18 @@ patchUser user = do
             )
     existingUserM <- DB.exec (User.findOneByEmail email)
     when (isJust existingUserM) (respondError existingUserErr)
-  case userEmailM of
+  updatedUser <- case userEmailM of
     Nothing -> do
       case passM of
-        Nothing -> DB.exec $ User.save (user {userEmail = Just email})
+        Nothing -> do
+          let u = user {userEmail = Just email}
+          DB.exec $ User.save u
+          return u
         Just pass -> do
           u <- liftIO (User.setPassword user pass)
-          DB.exec $ User.save (u {userEmail = Just email})
+          let u' = u {userEmail = Just email}
+          DB.exec $ User.save u'
+          return u'
     Just _ -> do
       mid <- liftIO UUIDv4.nextRandom
       expires <- addUTCTime 86400 <$> liftIO getCurrentTime
@@ -102,10 +104,12 @@ patchUser user = do
       DB.exec (MagicLink.save m)
       whenJust passM $ \pass -> do
         DB.exec . User.save =<< liftIO (User.setPassword user pass)
+      return user
+  sessionCookie <- Session.createSessionCookie updatedUser
   returnNoContent <- maybe False (== "return-no-content") <$> header "Prefer"
   if returnNoContent
-    then return $ status status204 $ text ""
+    then return $ withCookie' sessionCookie $ status status204 $ text ""
     else
       if userPaid user
-        then return $ redirect303 (renderUrl userUrl)
-        else return $ redirect303 (renderUrl (appUrl e +> ["payments", "new"]))
+        then return $ withCookie' sessionCookie $ redirect303 (renderUrl userUrl)
+        else return $ withCookie' sessionCookie $ redirect303 (renderUrl (appUrl e +> ["payments", "new"]))

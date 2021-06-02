@@ -54,7 +54,7 @@ noFollowingsNoticeHtml = do
 
 firstFollowingNoticeHtml = do
   H.p $ H.small $ do
-    toHtml ("Your followings are listed above with their most recent post. Visit your " :: Text)
+    toHtml ("Followings are listed with their most recent post. Visit your " :: Text)
     H.a ! A.href "/" ! A.class_ "icon-left" $ do
       Icon.newspaper
       H.span "News Feed"

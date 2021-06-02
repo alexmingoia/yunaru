@@ -42,7 +42,7 @@ getStripeCheckoutSessionId = do
   e <- env
   user <- Session.requireUser
   let userUrl = appUrl e +> ["users", UUID.toText (userId user), "edit"]
-  email <- maybe (send (redirect303 (renderUrl userUrl))) pure (userEmail user)
+  email <- param "email"
   if userPaid user
     then send $ redirect302 (renderUrl (appUrl e))
     else do
@@ -83,8 +83,10 @@ verifyStripeCheckoutSuccess = do
       token = Hex.encode (Crypto.hmac_sha256 key msg)
   when (token /= tokenP) $ send (redirect303 (renderUrl userUrl))
   newsletterId <- liftIO Mnemonic.nextRandom
-  DB.exec $ User.save (user {userStatus = "active", userNewsletterId = Just newsletterId})
-  send $ redirect303 (renderUrl userUrl)
+  let updatedUser = user {userStatus = "active", userNewsletterId = Just newsletterId}
+  DB.exec $ User.save updatedUser
+  sessionCookie <- Session.createSessionCookie updatedUser
+  send $ withCookie' sessionCookie $ redirect303 (renderUrl userUrl)
 
 catchStripeError :: IO a -> RouteM AppEnv a
 catchStripeError = (either (Error.getPlaintext :: StripeError -> RouteM AppEnv a) pure =<<) . liftIO . try

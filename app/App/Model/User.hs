@@ -103,7 +103,10 @@ save u = transaction $ do
       ( \r ->
           r
             `with` [ #userEmail := literal (userEmail u),
-                     #userPassword := literal (userPassword u),
+                     #userPassword
+                       := if isNothing (userPassword u)
+                         then r ! #userPassword
+                         else literal (userPassword u),
                      #userNewsletterId := literal (userNewsletterId u),
                      #userStatus := literal (userStatus u),
                      #userPaidUntil := literal (userPaidUntil u),
