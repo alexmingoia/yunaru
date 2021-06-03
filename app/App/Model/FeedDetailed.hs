@@ -101,7 +101,6 @@ findByCategory categoryM userM = do
             userM
         )
         (select followings)
-    orderRandom
     return (f :*: a :*: (fe ! #featuredSummary) :*: e :*: fg)
   where
     toFeedDetailed r =

@@ -14,6 +14,7 @@ import App.View.Language
 import Data.List as L
 import Data.Time.Clock
 import Network.HTTP.Types
+import System.Random.Shuffle
 import Web.Twain
 
 pageSize = 30
@@ -37,7 +38,9 @@ getFollowing err = do
   entriesDtld <- maybe (pure []) (DB.exec . EntryDetailed.findFollowing pageSize beforeM) userM
   feedsDtld <-
     if L.null entriesDtld
-      then DB.exec $ FeedDetailed.findByCategory categoryM userM
+      then do
+        fds <- DB.exec $ FeedDetailed.findByCategory categoryM userM
+        liftIO $ shuffleM fds
       else pure []
   now <- liftIO getCurrentTime
   sendHtmlPage (errorStatus err) (appName appEnv) $
