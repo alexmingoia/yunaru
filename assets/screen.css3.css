@@ -38,6 +38,7 @@
   --button-outline-border-hover: 1px solid var(--text-lighter);
 
   --link: inherit;
+  --link-visited: var(--text-lighter);
   --link-active: var(--text-normal);
   --link-hover: var(--text-normal);
   --link-background: inherit;
@@ -91,6 +92,7 @@
     --button-outline-border-hover: 1px solid var(--text-placeholder);
 
     --link: inherit;
+    --link-visited: var(--text-lighter);
     --link-active: var(--text-normal);
     --link-hover: var(--color-primary);
     --link-background: inherit;
@@ -364,6 +366,10 @@ button.link { /* style buttons as links */
 
 a:link, a:visited {
   color: var(--link);
+}
+
+.h-cite .p-name a:visited, .p-summary a:visited, .e-content a:visited {
+  color: var(--link-visited);
 }
 
 a:focus, button.link:focus {
