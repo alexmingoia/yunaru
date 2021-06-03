@@ -27,7 +27,8 @@ data FeedDetailed
   = FeedDetailed
       { feedInfo :: Feed,
         feedAuthor :: Author,
-        feedFollowing :: Maybe Following
+        feedFollowing :: Maybe Following,
+        feedRecentEntry :: Maybe Entry
       }
 
 instance Eq FeedDetailed where
@@ -36,12 +37,22 @@ instance Eq FeedDetailed where
 instance Ord FeedDetailed where
   compare a b = compare (feedInfo a) (feedInfo b)
 
+ignoredFeedNames :: [Text]
+ignoredFeedNames =
+  [ "News",
+    "Blog",
+    "Latest"
+  ]
+
 feedDisplayName fd =
   let f = feedInfo fd
       a = feedAuthor fd
-   in fromMaybe (renderDisplayUrl (feedUrl f)) (feedName f <|> authorName a)
+      displayUrl = renderDisplayUrl (feedUrl f)
+   in if feedName f `L.elem` (Just <$> ignoredFeedNames)
+        then fromMaybe displayUrl (authorName a)
+        else fromMaybe displayUrl (feedName f <|> authorName a)
 
-feedDetailed f a = FeedDetailed f a Nothing
+feedDetailed f a = FeedDetailed f a Nothing Nothing
 
 findOne :: URL -> Maybe User -> SeldaT PG IO (Maybe FeedDetailed)
 findOne url userM = do
@@ -59,7 +70,48 @@ findOne url userM = do
         (select followings)
     return (f :*: a :*: fg)
   where
-    toFeedDetailed r = FeedDetailed (first r) (second r) (third r)
+    toFeedDetailed r = FeedDetailed (first r) (second r) (third r) Nothing
+
+findByCategory :: Maybe Text -> Maybe User -> SeldaT PG IO [FeedDetailed]
+findByCategory categoryM userM = do
+  fmap (fmap toFeedDetailed) <$> query $ distinct $ do
+    f <- select feeds
+    a <- innerJoin (\a -> a ! #authorUrl .== f ! #feedAuthorUrl) (select authors)
+    fe <- case categoryM of
+      Nothing -> do
+        innerJoin
+          (\c -> c ! #featuredFeedUrl .== f ! #feedUrl)
+          $ select featuredTable
+      Just category -> do
+        innerJoin
+          ( \c ->
+              c ! #featuredCategory .== literal category
+                .&& c ! #featuredFeedUrl .== f ! #feedUrl
+          )
+          $ select featuredTable
+    e <-
+      leftJoin
+        (\e -> e ! #entryFeedUrl .== f ! #feedUrl .&& just (e ! #entryUrl) .== f ! #feedRecentEntryUrl)
+        $ select entries
+    fg <-
+      leftJoin
+        ( maybe
+            (const false)
+            (\u -> \fg -> fg ! #followingUserId .== literal (userId u) .&& fg ! #followingFeedUrl .== f ! #feedUrl)
+            userM
+        )
+        (select followings)
+    orderRandom
+    return (f :*: a :*: (fe ! #featuredSummary) :*: e :*: fg)
+  where
+    toFeedDetailed r =
+      let feed = first r
+          author = second r
+          featuredSummaryM = third r
+          entryM = fourth r
+          followingM = fifth r
+          summary = featuredSummaryM <|> feedSummary feed
+       in FeedDetailed (feed {feedSummary = summary}) author followingM entryM
 
 -- | Insert or update feed author and entries.
 save :: FeedDetailed -> SeldaT PG IO ()

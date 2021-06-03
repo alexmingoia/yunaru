@@ -29,10 +29,14 @@ getRecentEntryList err = do
   urlP <- fromMaybe "" <$> paramMaybe "url"
   beforeM <- (parseDateTime =<<) <$> paramMaybe "before"
   userM <- Session.getUser
-  fds <- maybe (pure []) (DB.exec . FollowingDetailed.find pageSize beforeM . userId) userM
+  followingsDtld <-
+    maybe
+      (pure [])
+      (DB.exec . FollowingDetailed.find pageSize beforeM . userId)
+      userM
   now <- liftIO getCurrentTime
   sendHtmlPage (errorStatus err) "Following" $
-    followingsRecentEntryHtml appEnv now pageSize beforeM err urlP fds
+    followingsRecentEntryHtml appEnv now pageSize beforeM err urlP followingsDtld
 
 post :: RouteM AppEnv a
 post = do

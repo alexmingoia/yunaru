@@ -45,8 +45,7 @@ feedHeaderHtml env feedDtld = do
       H.div ! A.class_ "image" $ H.img ! A.src (urlValue src) ! A.width "64" ! A.height "64" ! A.class_ "u-photo"
     H.h1
       ! (if isJust (feedName feed) then A.class_ "p-name" else mempty)
-      $ toHtml
-      $ fromMaybe (feedDisplayName feedDtld) (authorName author)
+      $ toHtml (feedDisplayName feedDtld)
     H.p $ H.small $ do
       if authorUrl author == feedUrl feed
         then do
@@ -95,16 +94,15 @@ feedFollowButtonHtml followingM feedDtld = do
       followFormMethodXHR = if isFollowing then "PUT" else "DELETE"
       followFormAction = rootUrl +> ["followings", renderUrl (feedUrl feed)] ?> [("_method", followFormMethod)]
       followFormActionXHR = rootUrl +> ["followings", renderUrl (feedUrl feed)] ?> [("_method", followFormMethodXHR)]
-  when isFollowing $ do
-    H.form
-      ! A.method "POST"
-      ! A.action (urlValue followFormAction)
-      ! customAttribute "data-xhr" "true"
-      ! customAttribute "data-xhr-success-label" (if isFollowing then "Follow" else "Unfollow")
-      ! customAttribute "data-xhr-success-action" (urlValue followFormActionXHR)
-      $ do
-        H.input ! A.type_ "hidden" ! A.name "redirect_url" ! A.value (urlValue (localFeedUrl feed))
-        H.small $ H.button ! A.type_ "submit" ! A.class_ "button outline" $ if isFollowing then "Unfollow" else "Follow"
+  H.form
+    ! A.method "POST"
+    ! A.action (urlValue followFormAction)
+    ! customAttribute "data-xhr" "true"
+    ! customAttribute "data-xhr-success-label" (if isFollowing then "Follow" else "Unfollow")
+    ! customAttribute "data-xhr-success-action" (urlValue followFormActionXHR)
+    $ do
+      H.input ! A.type_ "hidden" ! A.name "redirect_url" ! A.value (urlValue (localFeedUrl feed))
+      H.small $ H.button ! A.type_ "submit" ! A.class_ "button outline" $ if isFollowing then "Unfollow" else "Follow"
 
 feedMuteButtonHtml followingM feedDtld = do
   let feed = feedInfo feedDtld

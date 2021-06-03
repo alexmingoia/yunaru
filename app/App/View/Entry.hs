@@ -7,9 +7,9 @@ import App.Model.EntryDetailed
 import App.Model.Env
 import App.Model.Image as Image
 import App.Model.Twitter as Twitter
+import App.View.Discover
 import App.View.Icon as Icon
 import App.View.Language
-import App.View.Payment
 import App.View.URL
 import Control.Applicative
 import Control.Monad
@@ -21,8 +21,11 @@ import Text.Blaze.Html ((!), customAttribute, preEscapedToHtml, textValue, toHtm
 import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A
 
-followingEntriesHtml env now userM pageSize beforeM entriesDtld = do
+followingEntriesHtml env now pageSize beforeM categoryM entriesDtld feedsDtld = do
   when (isNothing beforeM && L.null entriesDtld) noFollowingEntriesNoticeHtml
+  when (L.null entriesDtld) $ do
+    H.div ! A.class_ "separator" $ Icon.handDrawnLine
+    discoverHtml env (appUrl env) categoryM feedsDtld
   forM_ entriesDtld (entrySnippetHtml env now)
   when (isJust beforeM && pageSize /= L.length entriesDtld) endOfEntriesNoticeHtml
   when (pageSize == L.length entriesDtld) $ do

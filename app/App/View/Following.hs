@@ -11,7 +11,6 @@ import App.View.Error
 import App.View.Icon as Icon
 import App.View.Language
 import App.View.URL
-import Control.Applicative
 import Control.Monad.Extra
 import Data.List as L
 import Data.Maybe
@@ -48,6 +47,11 @@ followingsRecentEntryHtml env now pageSize beforeM err urlP followingsDtld = do
           ! A.href (urlValue nextPageUrl)
           ! A.class_ "button"
           $ "More followings →"
+  when (L.length followingsDtld > 1) $ do
+    H.p $ H.small $ do
+      toHtml ("Looking for more feeds to follow? " :: Text)
+      H.a ! A.href "/discover" $ "Discover"
+      toHtml (" selected feeds." :: Text)
 
 noFollowingsNoticeHtml = do
   H.p $ "Your followings will appear here, along with their most recent entry."
@@ -58,14 +62,16 @@ firstFollowingNoticeHtml = do
     H.a ! A.href "/" ! A.class_ "icon-left" $ do
       Icon.newspaper
       H.span "News Feed"
-    toHtml (" to see all posts." :: Text)
+    toHtml (" to see all posts. Looking for more feeds to follow? " :: Text)
+    H.a ! A.href "/discover" $ "Discover"
+    toHtml (" selected feeds." :: Text)
 
 followingRecentEntrySnippetHtml env now followingDtld = do
   let entryM = followingRecentEntry followingDtld
       isMuted = followingMuted (followingInfo followingDtld)
       feed = followingFeed followingDtld
       author = followingAuthor followingDtld
-      feedDisplayName = fromMaybe (renderDisplayUrl (feedUrl feed)) (feedName feed <|> authorName author)
+      feedDtld = feedDetailed feed author
   H.div ! A.class_ "h-cite u-follow-of" $ do
     H.div ! A.class_ "byline" $ do
       whenJust (Image.cacheUrl env 128 128 True <$> authorImageUrl author) $ \imageUrl -> do
@@ -76,15 +82,9 @@ followingRecentEntrySnippetHtml env now followingDtld = do
             ! A.width "32"
             ! A.height "32"
             ! customAttribute "aria-hidden" "true"
-            ! A.alt (textValue feedDisplayName)
-      if isNothing (feedName feed) || feedName feed == authorName author
-        then do
-          H.a ! A.href (urlValue (localFeedUrl feed)) ! A.class_ "name p-name" $ toHtml $ authorDisplayName author
-        else do
-          H.a ! A.href (urlValue (localFeedUrl feed)) ! A.class_ "name" $ do
-            H.span ! A.class_ "p-author" $ toHtml $ authorDisplayName author
-            toHtml (": " :: Text)
-            H.span ! A.class_ "p-name" $ toHtml feedDisplayName
+            ! A.alt (textValue (feedDisplayName feedDtld))
+      H.a ! A.href (urlValue (localFeedUrl feed)) ! A.class_ "p-name" $
+        toHtml (feedDisplayName feedDtld)
       when isMuted $ do
         H.span " · "
         H.a ! A.href (urlValue (localFeedUrl feed)) $ H.span $ "Muted"

@@ -4,6 +4,7 @@ module App.WebServer where
 
 import qualified App.Controller.About as About
 import qualified App.Controller.Author as Author
+import qualified App.Controller.Discover as Discover
 import qualified App.Controller.Entry as Entry
 import qualified App.Controller.Error as Error
 import qualified App.Controller.Feed as Feed
@@ -33,6 +34,7 @@ serve = do
     middleware $ staticPolicy' cacheContainer (hasPrefix "assets")
     get "/" $ Entry.getFollowing Nothing
     get "/authors/:url" Author.get
+    get "/discover" $ Discover.list
     get "/followings" $ Following.getRecentEntryList Nothing
     get "/magic-links/new" $ MagicLink.getForm Nothing
     get "/magic-links/sent" MagicLink.getSentMessage

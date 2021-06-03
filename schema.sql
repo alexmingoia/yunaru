@@ -50,6 +50,13 @@ alter table feeds add constraint feeds_url_excl exclude using btree (lower(url) 
 create index on feeds(updated_at);
 create index on feeds(imported_at);
 
+create table featured (
+  category text not null,
+  feed_url text not null references feeds(url) on delete cascade on update cascade,
+  summary text,
+  primary key (category, feed_url)
+);
+
 create table followings (
   user_id uuid not null references users(id) on delete cascade,
   feed_url text not null references feeds(url) on delete cascade on update cascade,

@@ -52,6 +52,30 @@ data FeedFormat
 
 instance SqlType FeedFormat
 
+data Featured
+  = Featured
+      { featuredCategory :: Text,
+        featuredFeedUrl :: URL,
+        featuredSummary :: Maybe Text
+      }
+  deriving (Generic, Show)
+
+instance SqlRow Featured
+
+featuredTable :: Table Featured
+featuredTable = tableFieldMod "featured" [] (toFieldName "featured")
+
+feedCategories :: [Text]
+feedCategories =
+  [ "Art & Design",
+    "Music",
+    "Business & Marketing",
+    "Technology",
+    "Culture & Lifestyle",
+    "Gaming",
+    "Spirituality"
+  ]
+
 find :: AuthorURL -> SeldaT PG IO [Feed]
 find url = query $ do
   f <- select feeds
