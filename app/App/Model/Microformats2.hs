@@ -25,6 +25,7 @@ import Data.Time.Clock
 import qualified Data.Vector as V
 import Network.URI (parseURI)
 import Text.HTML.Scalpel.Core
+import qualified Text.HTML.TagSoup as TS
 import Text.Read (readMaybe)
 
 importFeedEntries :: AppEnv -> URL -> IO (FeedDetailed, [EntryDetailed])
@@ -84,35 +85,59 @@ importAuthor url = do
                 ]
       maybe (throwIO (ImportError finalUrl NoAuthorFound)) pure authorM
 
--- | Extract an h-card from page title and meta tags.
 authorFromHtml :: URL -> BL.ByteString -> Maybe Author
-authorFromHtml url html = scrapeStringLike html $ do
-  name <- text "title"
-  desc <- listToMaybe <$> (attrs "content" $ "meta" @: ["name" @= "description"])
-  ogImageUrl <- listToMaybe <$> (attrs "content" $ "meta" @: ["property" @= "og:image"])
-  iconUrl <-
-    listToMaybe
-      <$> chroots
-        "link"
-        ( do
-            (attr "href" $ "link" @: ["rel" @= "icon", "sizes" @= "128x128"])
-              <|> (attr "href" $ "link" @: ["rel" @= "shortcut icon", "sizes" @= "64x64"])
-              <|> (attr "href" $ "link" @: ["rel" @= "icon", "sizes" @= "64x64"])
-              <|> (attr "href" $ "link" @: ["rel" @= "apple-touch-icon"])
-              <|> (attr "href" $ "link" @: ["rel" @= "shortcut icon", "sizes" @= "48x48"])
-              <|> (attr "href" $ "link" @: ["rel" @= "icon", "sizes" @= "48x48"])
-              <|> (attr "href" $ "link" @: ["rel" @= "shortcut icon", "sizes" @= "32x32"])
-              <|> (attr "href" $ "link" @: ["rel" @= "icon", "sizes" @= "32x32"])
-              <|> (attr "href" $ "link" @: ["rel" @= "icon"])
-              <|> (attr "href" $ "link" @: ["rel" @= "shortcut icon"])
-        )
-  let imageUrl = iconUrl <|> ogImageUrl
-  return $
-    (emptyAuthor url)
-      { authorName = nullifyText $ lbsToTxt name,
-        authorImageUrl = flip relativeTo url <$> (parseUrl =<< lbsToTxt <$> imageUrl),
-        authorNote = nullifyText =<< (lbsToTxt <$> desc)
-      }
+authorFromHtml url html =
+  let a = authorFromTags url (emptyAuthor url) $ headTags $ TS.parseTags html
+   in if isJust (authorName a) then Just a else Nothing
+
+headTags :: [TS.Tag BL.ByteString] -> [TS.Tag BL.ByteString]
+headTags tss = L.takeWhile beforeBody tss
+  where
+    beforeBody (TS.TagClose "head") = False
+    beforeBody _ = True
+
+authorFromTags :: URL -> Author -> [TS.Tag BL.ByteString] -> Author
+authorFromTags url a tags =
+  let nameM = authorNameFromTags tags
+      noteM = listToMaybe $ catMaybes $ authorNoteFromTag <$> tags
+      icons = L.reverse $ L.sortOn fst (catMaybes (authorIconFromTag <$> tags))
+      iconM = snd <$> listToMaybe icons
+      ogImageM = listToMaybe $ catMaybes (authorOgImageFromTag <$> tags)
+      imageUrlM = flip relativeTo url <$> (iconM <|> ogImageM)
+   in a
+        { authorName = nullifyText =<< nameM,
+          authorNote = nullifyText =<< noteM,
+          authorImageUrl = imageUrlM
+        }
+
+authorNameFromTags :: [TS.Tag BL.ByteString] -> Maybe Text
+authorNameFromTags ((TS.TagOpen "title" _) : (TS.TagText t) : _) =
+  Just (decodeUtf8 (BL.toStrict t))
+authorNameFromTags (_ : ts) = authorNameFromTags ts
+authorNameFromTags [] = Nothing
+
+authorNoteFromTag :: TS.Tag BL.ByteString -> Maybe Text
+authorNoteFromTag (TS.TagOpen "meta" attrs) = do
+  content <- snd <$> L.find ((== "content") . fst) attrs
+  _ <- L.find (== "description") (snd <$> attrs)
+  return $ decodeUtf8 (BL.toStrict content)
+authorNoteFromTag _ = Nothing
+
+authorOgImageFromTag :: TS.Tag BL.ByteString -> Maybe URL
+authorOgImageFromTag (TS.TagOpen "meta" attrs) = do
+  href <- snd <$> L.find ((== "content") . fst) attrs
+  _ <- L.find (== "og:image") (snd <$> attrs)
+  parseUrl (decodeUtf8 (BL.toStrict href))
+authorOgImageFromTag _ = Nothing
+
+authorIconFromTag :: TS.Tag BL.ByteString -> Maybe (Int, URL)
+authorIconFromTag (TS.TagOpen "link" attrs) = do
+  href <- snd <$> L.find ((== "href") . fst) attrs
+  _ <- L.find (\v -> v == "icon" || v == "shortcut icon" || v == "apple-touch-icon") (snd <$> attrs)
+  let size = fromMaybe 0 $ readMaybe . unpack . fst . T.breakOn "x" . decodeUtf8 . BL.toStrict =<< (snd <$> L.find ((== "sizes") . fst) attrs)
+  url <- parseUrl (decodeUtf8 (BL.toStrict href))
+  return (size, url)
+authorIconFromTag _ = Nothing
 
 -- | Find the representative author for given URL and its MF2 JSON.
 --

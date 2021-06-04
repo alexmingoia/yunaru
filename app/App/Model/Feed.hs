@@ -98,17 +98,20 @@ existsByURL url = fmap (not . L.null) <$> query $ do
 dequeueFeedsToImport :: SeldaT PG IO [Feed]
 dequeueFeedsToImport = do
   now <- liftIO getCurrentTime
-  let min10ago = just (literal (addUTCTime (-900) now))
+  let min10ago = just (literal (addUTCTime (-600) now))
       hr1ago = just (literal (addUTCTime (-3600) now))
-      day3ago = just (literal (addUTCTime (-259200 now))
+      hr4ago = just (literal (addUTCTime (-14400) now))
+      day3ago = just (literal (addUTCTime (-259200) now))
+      month1ago = just (literal (addUTCTime (-2592000) now))
   transaction $ do
     res <- query $ limit 0 25 $ do
       f <- select feeds
-      let backoff1 = f ! #feedUpdatedAt .>= day3ago .&& f ! #feedImportedAt .<= min10ago
-          backoff2 = f ! #feedUpdatedAt .<= day3ago .&& f ! #feedImportedAt .<= hr1ago
-          noPublishDate = isNull (f ! #feedUpdatedAt)
+      let backoff1 = isNull (f ! #feedImportError) .&& f ! #feedUpdatedAt .>= day3ago .&& f ! #feedImportedAt .<= min10ago
+          backoff2 = isNull (f ! #feedImportError) .&& f ! #feedUpdatedAt .<= day3ago .&& f ! #feedImportedAt .<= hr1ago
+          backoff3 = not_ (isNull (f ! #feedImportError)) .&& f ! #feedUpdatedAt .>= month1ago .&& f ! #feedImportedAt .<= hr4ago
+          noPublishDate = isNull (f ! #feedUpdatedAt) .&& f ! #feedImportedAt .<= hr1ago
           isImported = not_ (isNull (f ! #feedImportedAt))
-      restrict (isImported .&& (noPublishDate .|| backoff1 .|| backoff2))
+      restrict (isImported .&& (noPublishDate .|| backoff1 .|| backoff2 .|| backoff3))
       order (f ! #feedImportedAt) ascending
       return f
     update_
@@ -129,6 +132,7 @@ save feed = transaction $ do
                      #feedName := literal (feedName feed),
                      #feedSummary := literal (feedSummary feed),
                      #feedFormat := literal (feedFormat feed),
+                     #feedImportError := literal (feedImportError feed),
                      #feedRecentEntryUrl := literal (feedRecentEntryUrl feed),
                      #feedUpdatedAt := literal (feedUpdatedAt feed),
                      #feedImportedAt := literal (feedImportedAt feed)
