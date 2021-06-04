@@ -98,24 +98,17 @@ existsByURL url = fmap (not . L.null) <$> query $ do
 dequeueFeedsToImport :: SeldaT PG IO [Feed]
 dequeueFeedsToImport = do
   now <- liftIO getCurrentTime
-  let min10ago = just (literal (addUTCTime (-600) now))
-      min30ago = just (literal (addUTCTime (-1800) now))
+  let min10ago = just (literal (addUTCTime (-900) now))
       hr1ago = just (literal (addUTCTime (-3600) now))
-      hr2ago = just (literal (addUTCTime (-7200) now))
-      hr4ago = just (literal (addUTCTime (-14400) now))
-      day1ago = just (literal (addUTCTime (-86400) now))
-      day2ago = just (literal (addUTCTime (-172800) now))
+      day3ago = just (literal (addUTCTime (-259200 now))
   transaction $ do
-    res <- query $ limit 0 10 $ do
+    res <- query $ limit 0 25 $ do
       f <- select feeds
-      let backoff1 = f ! #feedUpdatedAt .>= min30ago .&& f ! #feedImportedAt .<= min10ago
-          backoff2 = f ! #feedUpdatedAt .>= hr1ago .&& f ! #feedImportedAt .<= min30ago
-          backoff3 = f ! #feedUpdatedAt .>= day1ago .&& f ! #feedImportedAt .<= hr1ago
-          backoff4 = f ! #feedUpdatedAt .>= day2ago .&& f ! #feedImportedAt .<= hr2ago
-          backoff5 = f ! #feedImportedAt .<= hr4ago
-          noPublishDate = isNull (f ! #feedUpdatedAt) .&& f ! #feedImportedAt .<= hr4ago
+      let backoff1 = f ! #feedUpdatedAt .>= day3ago .&& f ! #feedImportedAt .<= min10ago
+          backoff2 = f ! #feedUpdatedAt .<= day3ago .&& f ! #feedImportedAt .<= hr1ago
+          noPublishDate = isNull (f ! #feedUpdatedAt)
           isImported = not_ (isNull (f ! #feedImportedAt))
-      restrict (isImported .&& (noPublishDate .|| backoff1 .|| backoff2 .|| backoff3 .|| backoff4 .|| backoff5))
+      restrict (isImported .&& (noPublishDate .|| backoff1 .|| backoff2))
       order (f ! #feedImportedAt) ascending
       return f
     update_
