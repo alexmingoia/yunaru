@@ -16,6 +16,7 @@ import Control.Concurrent.Async (forConcurrently_)
 import Control.Exception
 import Control.Monad
 import Data.Text as T
+import Data.Time.Clock
 
 delay = 3000000 -- three second delay between batches
 
@@ -51,7 +52,9 @@ importFeedsJob = do
 saveImportError :: AppEnv -> Feed -> AppError -> IO ()
 saveImportError env feed (ImportError _ e) = do
   when (appDebug env) (putStrLn (displayException e))
-  DB.execEnv env (Feed.save (feed {feedImportError = Just e}))
+  now <- getCurrentTime
+  let updatedFeed = feed {feedImportError = Just e, feedImportedAt = Just now}
+  DB.execEnv env $ Feed.save updatedFeed
 saveImportError env _ e = when (appDebug env) (putStrLn (displayException e))
 
 sendMagicLinksJob :: IO ()
