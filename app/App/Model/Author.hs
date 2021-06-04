@@ -52,7 +52,7 @@ save author = transaction $ do
           a
             `with` [ #authorUrl := literal (authorUrl author),
                      #authorName := literal (authorName author),
-                     #authorImageUrl := literal (authorImageUrl author),
+                     #authorImageUrl := if isNothing (authorImageUrl author) then a ! #authorImageUrl else literal (authorImageUrl author),
                      #authorNote := literal (authorNote author),
                      #authorImportedAt := literal (authorImportedAt author)
                    ]

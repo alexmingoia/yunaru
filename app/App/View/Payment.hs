@@ -2,11 +2,8 @@ module App.View.Payment where
 
 import App.Model.Env
 import App.Model.User
-import Control.Monad (when)
-import Control.Monad.Extra (whenJust)
-import Data.Maybe
 import Data.Text
-import Text.Blaze.Html ((!), toHtml)
+import Text.Blaze.Html ((!), textValue, toHtml)
 import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A
 
@@ -15,18 +12,15 @@ paymentFormHtml env = do
   stripeJsHtml env
   H.script "waitForScripts(redirectToCheckout);"
 
-signupNoticeHtml userM =
-  whenJust userM $ \u -> when (isNothing (userEmail u)) $ do
-    H.aside $ do
-      H.p $ do
-        H.a ! A.href "/users/new" $ "Save your feed"
-        toHtml (" for $33/year, and access it anywhere. You'll also get an email you can use to follow newsletters." :: Text)
-
-paymentIncompleteAlertHtml env = do
+paymentIncompleteAlertHtml env user = do
   let paymentUrl = appUrl env +> ["payments", "new"]
   H.div ! A.role "alert" $ do
-    H.p "Complete your payment to finish creating your account."
+    H.p $ do
+      toHtml ("Complete your payment to prevent losing access to your feed. " :: Text)
+      toHtml $ toTitle (appName env) <> " charges a one-time fee of $19.99 for unlimited usage."
     H.form ! A.method "GET" ! A.action (urlValue paymentUrl) ! A.onsubmit "submitFormAndRedirectToCheckout(event);" $ do
+      let email = maybe "" renderEmail (userEmail user)
+      H.input ! A.type_ "hidden" ! A.name "email" ! A.value (textValue email)
       H.button ! A.type_ "submit" ! A.class_ "button outline" $ "Pay now"
 
 stripeJsHtml env = do

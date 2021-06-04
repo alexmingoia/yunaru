@@ -149,7 +149,7 @@ instance StripeApiRequest StripeCheckoutSessionCreate where
   stripeApiBody s =
     "cancel_url="
       <> encodeUtf8 (renderUrl (checkoutCancelUrl s))
-      <> "&mode=subscription"
+      <> "&mode=payment"
       <> "&payment_method_types[0]=card"
       <> "&success_url="
       <> encodeUtf8 (renderUrl (checkoutSuccessUrl s))

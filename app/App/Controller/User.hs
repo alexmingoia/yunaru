@@ -44,7 +44,8 @@ getNewForm errM = do
 
 getEditForm :: Text -> Maybe AppError -> RouteM AppEnv a
 getEditForm id errM = do
-  user <- Session.requireUser
+  u <- Session.requireUser
+  user <- maybe NotFound.get pure =<< DB.exec (User.findOne (userId u))
   when (maybe True (/= userId user) (UUID.fromText id)) NotFound.get
   pendingEmailM <- DB.exec $ MagicLink.findOneVerifyEmail (userId user)
   emailM <- (<|> (userEmail user <|> pendingEmailM)) <$> paramMaybe "email"

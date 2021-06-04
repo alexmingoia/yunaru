@@ -2,13 +2,15 @@ function submitFormAndRedirectToCheckout(event) {
   event.preventDefault();
 
   var form = event.currentTarget;
+  var formData = new FormData(form);
 
   if (form.getAttribute('method') === 'GET') {
-    waitForScripts(redirectToCheckout);
+    waitForScripts(function() {
+      redirectToCheckout(formData);
+    });
   } else {
     waitForScripts(function() {
       var formUrl = form.getAttribute('action');
-      var formData = new FormData(form);
       doXHR(formUrl, formData, function(err, _, status) {
         if (err) {
           console.log(err);

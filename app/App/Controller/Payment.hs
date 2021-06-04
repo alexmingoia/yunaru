@@ -4,6 +4,7 @@
 module App.Controller.Payment where
 
 import App.Controller.Error as Error
+import App.Controller.NotFound as NotFound
 import App.Controller.Page
 import App.Controller.Session as Session
 import App.Model.Crypto as Crypto
@@ -40,7 +41,8 @@ getPaymentForm = do
 getStripeCheckoutSessionId :: RouteM AppEnv a
 getStripeCheckoutSessionId = do
   e <- env
-  user <- Session.requireUser
+  u <- Session.requireUser
+  user <- maybe NotFound.get pure =<< DB.exec (User.findOne (userId u))
   let userUrl = appUrl e +> ["users", UUID.toText (userId user), "edit"]
   email <- param "email"
   if userPaid user

@@ -26,10 +26,9 @@ userNewFormHtml env userM emailM passwordM confirmPasswordM errM = do
   H.section $ do
     H.h1 "Welcome."
     H.p $ do
-      toHtml $ toTitle (appName env)
-      toHtml (" costs " :: Text)
-      H.strong "$33/year"
-      toHtml (". You get unlimited followings and an email you can use to follow newsletters. There's no tracking, no ads, and your data is kept private." :: Text)
+      toHtml ("Create an account and save your feed for a one-time fee of " :: Text)
+      H.strong "$19.99"
+      toHtml (". You get unlimited usage, and an email you can use to follow newsletters. There's no tracking, no ads, and your data is kept private." :: Text)
     H.hr
     whenJust errM errorAlertHtml
     H.form
@@ -71,8 +70,7 @@ userNewFormHtml env userM emailM passwordM confirmPasswordM errM = do
 
 userEditFormHtml env user pendingEmailM emailM errM = do
   stripeJsHtml env
-  when (not (userPaid user)) $ paymentIncompleteAlertHtml env
-  when (userPaid user) (userSubscriptionHtml env user)
+  when (not (userPaid user)) $ paymentIncompleteAlertHtml env user
   whenJust (userNewsletterId user) $ \newsletterId -> do
     H.section $ do
       H.h2 "Newsletters"
@@ -137,34 +135,5 @@ userEditFormHtml env user pendingEmailM emailM errM = do
     let formActionUrl = (appUrl env +> ["sessions", uid]) ?> [("_method", "DELETE")]
     H.form ! A.method "POST" ! A.action (urlValue formActionUrl) $ do
       H.small $ H.button ! A.class_ "button outline" ! A.type_ "submit" $ "Sign out"
-
-userSubscriptionHtml env user = do
-  let portalUrl = appUrl env +> ["payments", "stripe", "portal"]
-  H.section $ do
-    H.h2 "Subscription"
-    H.p $ do
-      toHtml $ "Thanks for choosing " <> appName env <> "! "
-      case userStatus user of
-        "active" -> do
-          case userCanceledAt user of
-            Nothing -> whenJust (userPaidUntil user) $ \paidUntil -> do
-              toHtml ("Your subscription will automatically renew on " :: Text)
-              timeHtml paidUntil
-              toHtml ("." :: Text)
-            Just canceledAt -> do
-              toHtml ("You canceled your subscription on " :: Text)
-              timeHtml canceledAt
-              whenJust (userPaidUntil user) $ \paidUntil -> do
-                toHtml (", and it will remain active until " :: Text)
-                timeHtml paidUntil
-              toHtml ("." :: Text)
-        "past_due" ->
-          H.p $ do
-            toHtml ("Your subscription is past due. Please " :: Text)
-            H.a ! A.href (urlValue portalUrl) $ "update your payment details"
-            toHtml ("." :: Text)
-        _ -> mempty
-    when (Just (userCreatedAt user) > parseDateTime "2021-05-04") $ do
-      H.p $ H.a ! A.href (urlValue portalUrl) $ "Manage Subscription"
 
 timeHtml t = H.time ! A.datetime (textValue (formatTime8601 t)) $ toHtml $ formatTimeHuman t
