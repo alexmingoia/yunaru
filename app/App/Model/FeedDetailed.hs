@@ -112,6 +112,35 @@ findByCategory categoryM userM = do
           summary = featuredSummaryM <|> feedSummary feed
        in FeedDetailed (feed {feedSummary = summary}) author followingM entryM
 
+-- | Select and timestamp feeds due for import.
+dequeueFeedsToImport :: SeldaT PG IO [FeedDetailed]
+dequeueFeedsToImport = do
+  now <- liftIO getCurrentTime
+  let min10ago = just (literal (addUTCTime (-600) now))
+      hr1ago = just (literal (addUTCTime (-3600) now))
+      hr4ago = just (literal (addUTCTime (-14400) now))
+      week1ago = just (literal (addUTCTime (-604800) now))
+      month1ago = just (literal (addUTCTime (-2592000) now))
+  transaction $ do
+    res <- query $ limit 0 25 $ do
+      f <- select feeds
+      a <- innerJoin (\a -> a ! #authorUrl .== f ! #feedAuthorUrl) $ select authors
+      let backoff1 = isNull (f ! #feedImportError) .&& f ! #feedUpdatedAt .>= week1ago .&& f ! #feedImportedAt .<= min10ago
+          backoff2 = isNull (f ! #feedImportError) .&& f ! #feedUpdatedAt .<= week1ago .&& f ! #feedImportedAt .<= hr1ago
+          backoff3 = not_ (isNull (f ! #feedImportError)) .&& f ! #feedUpdatedAt .>= month1ago .&& f ! #feedImportedAt .<= hr4ago
+          noPublishDate = isNull (f ! #feedUpdatedAt) .&& f ! #feedImportedAt .<= hr1ago
+          isImported = not_ (isNull (f ! #feedImportedAt))
+      restrict (isImported .&& (noPublishDate .|| backoff1 .|| backoff2 .|| backoff3))
+      order (f ! #feedImportedAt) ascending
+      return (f :*: a)
+    update_
+      feeds
+      (\f -> f ! #feedUrl `isIn` (literal . feedUrl . first <$> res))
+      (\f -> f `with` [#feedImportedAt := just (literal now)])
+    return $ toFeedDetailed <$> res
+  where
+    toFeedDetailed r = FeedDetailed (first r) (second r) Nothing Nothing
+
 -- | Insert or update feed author and entries.
 save :: FeedDetailed -> SeldaT PG IO ()
 save feedDtld = do

@@ -31,8 +31,10 @@ importFeedsJob :: IO ()
 importFeedsJob = do
   DB.withConn $ \env -> do
     -- Import new entries from feeds.
-    feeds <- DB.execEnv env Feed.dequeueFeedsToImport
-    forConcurrently_ feeds $ \feed ->
+    fds <- DB.execEnv env FeedDetailed.dequeueFeedsToImport
+    forConcurrently_ fds $ \feedDtld -> do
+      let feed = feedInfo feedDtld
+          author = feedAuthor feedDtld
       handle (Error.ignore env) $ handle (saveImportError env feed) $ do
         when (appDebug env) $ putStrLn $ T.unpack $
           "Importing entries at " <> renderUrl (feedUrl feed)
@@ -41,6 +43,7 @@ importFeedsJob = do
             env
             (feedUrl feed)
             (Just (feedFormat feed))
+            (Just author)
         let uf = feedInfo ufd
         -- Update feed URL if different from previous feed URL (redirected or changed).
         when (feedUrl uf /= feedUrl feed) $ do

@@ -103,12 +103,18 @@ authorFromTags url a tags =
       icons = L.reverse $ L.sortOn fst (catMaybes (authorIconFromTag <$> tags))
       iconM = snd <$> listToMaybe icons
       ogImageM = listToMaybe $ catMaybes (authorOgImageFromTag <$> tags)
-      imageUrlM = flip relativeTo url <$> (iconM <|> ogImageM)
+      imageUrlM =
+        if isYoutube url
+          then (ogImageM <|> iconM)
+          else (iconM <|> ogImageM)
    in a
         { authorName = nullifyText =<< nameM,
           authorNote = nullifyText =<< noteM,
-          authorImageUrl = imageUrlM
+          authorImageUrl = flip relativeTo url <$> imageUrlM
         }
+
+isYoutube :: URL -> Bool
+isYoutube url = "youtube" `T.isInfixOf` fromMaybe "" (renderAuthority url)
 
 authorNameFromTags :: [TS.Tag BL.ByteString] -> Maybe Text
 authorNameFromTags ((TS.TagOpen "title" _) : (TS.TagText t) : _) =

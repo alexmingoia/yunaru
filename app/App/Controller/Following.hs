@@ -48,7 +48,7 @@ post = do
   url <- maybe (getRecentEntryList (Just invalidUrlError)) pure (parseInputUrl urlP)
   (fd, eds) <-
     either (getRecentEntryList . Just) pure
-      =<< liftIO (try (RemoteFeed.importEntries appEnv url Nothing))
+      =<< liftIO (try (RemoteFeed.importEntries appEnv url Nothing Nothing))
   DB.exec (FeedDetailed.save fd)
   DB.exec (EntryDetailed.saveAll eds)
   let following =

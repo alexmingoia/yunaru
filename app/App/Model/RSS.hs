@@ -16,7 +16,6 @@ import qualified Data.List as L
 import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
-import qualified Text.Atom.Feed as Atom
 import qualified Text.Feed.Import as XMLFeedImport
 import qualified Text.Feed.Query as XMLFeedQuery
 import qualified Text.Feed.Types as XMLFeed
@@ -88,7 +87,6 @@ authorFromXmlFeed xmlUrl feed =
     url = fromMaybe xmlUrl (flip relativeTo xmlUrl <$> (extractFeedAuthorUrl feed))
     imageUrl = parseUrl =<< ignoreBlankImage =<< XMLFeedQuery.getFeedLogoLink feed
     ignoreBlankImage txt = if "blank.gif" `T.isInfixOf` txt then Nothing else Just txt
-    extractFeedAuthorUrl (XMLFeed.AtomFeed f) = parseUrl =<< Atom.personURI =<< listToMaybe (Atom.feedAuthors f)
     extractFeedAuthorUrl (XMLFeed.RSSFeed f) = parseUrl =<< Just (RSS.rssLink (RSS.rssChannel f))
     extractFeedAuthorUrl (XMLFeed.RSS1Feed f) = parseUrl =<< Just (RSS1.channelURI (RSS1.feedChannel f))
     extractFeedAuthorUrl f = parseUrl =<< XMLFeedQuery.getFeedHome f
