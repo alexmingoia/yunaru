@@ -750,6 +750,10 @@ div[role="alert"] .button.outline.is-loading::before {
   white-space: nowrap;
 }
 
+.byline:last-child {
+  margin-bottom: 1em;
+}
+
 .byline > * {
   display: inline-block;
   vertical-align: middle;
