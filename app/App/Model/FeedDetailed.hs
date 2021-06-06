@@ -116,18 +116,18 @@ findByCategory categoryM userM = do
 dequeueFeedsToImport :: SeldaT PG IO [FeedDetailed]
 dequeueFeedsToImport = do
   now <- liftIO getCurrentTime
-  let min10ago = just (literal (addUTCTime (-600) now))
+  let min15ago = just (literal (addUTCTime (-900) now))
       hr1ago = just (literal (addUTCTime (-3600) now))
-      hr4ago = just (literal (addUTCTime (-14400) now))
+      day1ago = just (literal (addUTCTime (-86400) now))
       week1ago = just (literal (addUTCTime (-604800) now))
       month1ago = just (literal (addUTCTime (-2592000) now))
   transaction $ do
     res <- query $ limit 0 25 $ do
       f <- select feeds
       a <- innerJoin (\a -> a ! #authorUrl .== f ! #feedAuthorUrl) $ select authors
-      let backoff1 = isNull (f ! #feedImportError) .&& f ! #feedUpdatedAt .>= week1ago .&& f ! #feedImportedAt .<= min10ago
+      let backoff1 = isNull (f ! #feedImportError) .&& f ! #feedUpdatedAt .>= week1ago .&& f ! #feedImportedAt .<= min15ago
           backoff2 = isNull (f ! #feedImportError) .&& f ! #feedUpdatedAt .<= week1ago .&& f ! #feedImportedAt .<= hr1ago
-          backoff3 = not_ (isNull (f ! #feedImportError)) .&& f ! #feedUpdatedAt .>= month1ago .&& f ! #feedImportedAt .<= hr4ago
+          backoff3 = not_ (isNull (f ! #feedImportError)) .&& f ! #feedUpdatedAt .>= month1ago .&& f ! #feedImportedAt .<= day1ago
           noPublishDate = isNull (f ! #feedUpdatedAt) .&& f ! #feedImportedAt .<= hr1ago
           isImported = not_ (isNull (f ! #feedImportedAt))
       restrict (isImported .&& (noPublishDate .|| backoff1 .|| backoff2 .|| backoff3))

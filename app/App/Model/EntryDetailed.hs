@@ -61,7 +61,6 @@ findFollowing pageSize beforeM user = do
   rows <- query $ limit 0 pageSize $ do
     fg <- select followings
     restrict (fg ! #followingUserId .== literal (userId user) .&& fg ! #followingMuted .== false)
-    fd <- innerJoin (\fd -> fd ! #feedUrl .== fg ! #followingFeedUrl) $ select feeds
     e <- innerJoin (\e -> e ! #entryFeedUrl .== fg ! #followingFeedUrl) (select entries)
     whenJust beforeM $ \before ->
       restrict
@@ -76,12 +75,8 @@ findFollowing pageSize beforeM user = do
             (isNull (e ! #entryRebloggedAt))
             (e ! #entryPublishedAt)
             (e ! #entryRebloggedAt)
-        publishedOrImportedAt =
-          ifThenElse
-            (isNull (fd ! #feedCreatedAt) .|| (fd ! #feedCreatedAt .== e ! #entryImportedAt))
-            (publishedAt)
-            (e ! #entryImportedAt)
-    order publishedOrImportedAt descending
+    order (e ! #entryImportedAt) descending
+    order publishedAt descending
     return (e :*: a :*: ra)
   return (toEntryDetailed <$> rows)
   where
