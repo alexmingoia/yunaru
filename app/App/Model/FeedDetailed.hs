@@ -130,7 +130,8 @@ dequeueFeedsToImport = do
           backoff3 = not_ (isNull (f ! #feedImportError)) .&& f ! #feedUpdatedAt .>= month1ago .&& f ! #feedImportedAt .<= day1ago
           noPublishDate = isNull (f ! #feedUpdatedAt) .&& f ! #feedImportedAt .<= hr1ago
           isImported = not_ (isNull (f ! #feedImportedAt))
-      restrict (isImported .&& (noPublishDate .|| backoff1 .|| backoff2 .|| backoff3))
+          notEmailType = f ! #feedFormat ./= literal EmailFeedFormat
+      restrict (notEmailType .&& isImported .&& (noPublishDate .|| backoff1 .|| backoff2 .|| backoff3))
       order (f ! #feedImportedAt) ascending
       return (f :*: a)
     update_
