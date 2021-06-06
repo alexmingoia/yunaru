@@ -40,6 +40,7 @@ create table feeds (
   summary text,
   format text not null,
   import_error text,
+  etag text,
   recent_entry_url text,
   updated_at timestamptz,
   imported_at timestamptz,

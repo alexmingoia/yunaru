@@ -64,6 +64,7 @@ importFeedEntries env url = do
             feedName = Nothing,
             feedSummary = Nothing,
             feedFormat = TwitterFeedFormat,
+            feedEtag = Nothing,
             feedRecentEntryUrl = Nothing,
             feedUpdatedAt = Nothing,
             feedImportedAt = Nothing,

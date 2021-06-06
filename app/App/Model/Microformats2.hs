@@ -30,10 +30,13 @@ import Text.Read (readMaybe)
 
 importFeedEntries :: AppEnv -> URL -> IO (FeedDetailed, [EntryDetailed])
 importFeedEntries env url = do
-  (res, body, finalUrl) <- fetchAndRetryUrl url
+  (res, body, finalUrl) <- fetchUrl url []
   if contentType res == HTMLContentType
-    then parseFeedEntries env finalUrl body
-    else throwIO (ImportError url NoFeedFound)
+    then do
+      (fd, eds) <- parseFeedEntries env finalUrl body
+      let etagM = extractETag res
+      return (fd {feedInfo = (feedInfo fd) {feedEtag = etagM}}, eds)
+    else throwIO $ ImportError url NoFeedFound
 
 parseFeedEntries :: AppEnv -> URL -> BL.ByteString -> IO (FeedDetailed, [EntryDetailed])
 parseFeedEntries env url html = do
@@ -68,7 +71,7 @@ extractXmlFeedUrl baseUrl html = do
 
 importAuthor :: URL -> IO Author
 importAuthor url = do
-  (res, body, finalUrl) <- fetchAndRetryUrl url
+  (res, body, finalUrl) <- fetchUrl url []
   if contentType res /= HTMLContentType
     then throwIO (ImportError url NoAuthorFound)
     else do
@@ -187,6 +190,7 @@ feedFromMf2Json url author json =
           feedName = nullifyText =<< getMf2TextProp "name" =<< hfeed,
           feedSummary = summaryFromHtml Nothing <$> (nullifyText =<< getMf2TextProp "summary" =<< hfeed),
           feedFormat = MF2FeedFormat,
+          feedEtag = Nothing,
           feedRecentEntryUrl = Nothing,
           feedUpdatedAt = Nothing,
           feedImportedAt = Nothing,

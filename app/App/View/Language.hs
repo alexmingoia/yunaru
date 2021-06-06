@@ -106,6 +106,9 @@ formatTime8601 = pack . formatTime defaultTimeLocale "%Y-%m-%dT%H:%M:%S%QZ"
 formatTime822 :: UTCTime -> Text
 formatTime822 = pack . formatTime defaultTimeLocale "%a, %_d %b %Y %H:%M:%S %Z"
 
+formatTimeHttp :: UTCTime -> Text
+formatTimeHttp = pack . formatTime defaultTimeLocale "%a, %d %b %Y %H:%M:%S GMT"
+
 formatTimeHuman :: UTCTime -> Text
 formatTimeHuman = pack . formatTime defaultTimeLocale "%h %e, %Y"
 

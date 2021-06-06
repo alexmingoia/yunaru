@@ -61,6 +61,7 @@ postNewsletterWebhook = do
             feedSummary = Nothing,
             feedFormat = EmailFeedFormat,
             feedRecentEntryUrl = Just eUrl,
+            feedEtag = Nothing,
             feedUpdatedAt = Just now,
             feedImportedAt = Nothing,
             feedImportError = Nothing,

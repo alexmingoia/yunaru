@@ -6,22 +6,25 @@ import App.Model.Error
 import App.Model.URL
 import Control.Exception
 import qualified Data.ByteString.Lazy as BL
+import qualified Data.List as L
 import Data.Maybe
 import qualified Data.Text as T
 import Data.Text.Encoding
 import Network.HTTP.Client hiding (parseUrl)
 import Network.HTTP.Client.TLS
 import Network.HTTP.Types
-import Network.TLS
+import Network.HTTP.Types.Header
+import Network.TLS hiding (Header)
 
 -- | Fetch response body from URL, returning final URL after following redirects.
 --
 -- We need the final URL so we can use the correct URL in extracted author.
-fetchAndRetryUrl :: URL -> IO (Response BodyReader, BL.ByteString, URL)
-fetchAndRetryUrl url = handle (handleTlsError url) $ do
+fetchUrl :: URL -> [Header] -> IO (Response BodyReader, BL.ByteString, URL)
+fetchUrl url hs = handle (handleTlsError url) $ do
   manager <- newTlsManagerWith (tlsManagerSettings {managerResponseTimeout = responseTimeoutMicro 5000000})
   request <- parseRequest (T.unpack (renderUrl url))
-  handleResponse url =<< try (httpLbsWithFinalResponse request manager)
+  let reqWithHeaders = request {requestHeaders = hs}
+  handleResponse url =<< try (httpLbsWithFinalResponse reqWithHeaders manager)
   where
     urlFromReq :: Request -> URL
     urlFromReq req =
@@ -45,7 +48,7 @@ handleResponse url response =
     Left (HttpExceptionRequest _ e) ->
       -- Try http if https fails to connect.
       if isConnectionFailure e && "https://" `T.isPrefixOf` renderUrl url
-        then fetchAndRetryUrl (withHttp url)
+        then fetchUrl (withHttp url) []
         else throwIO (ImportError url NoResponse)
     Left _ ->
       throwIO (ImportError url NoResponse)
@@ -77,3 +80,7 @@ contentType res =
    in if ct `elem` htmlTypes
         then HTMLContentType
         else if ct `elem` xmlTypes then XMLContentType else UnsupportedContentType
+
+extractETag :: Response body -> Maybe T.Text
+extractETag res =
+  decodeUtf8 . snd <$> L.find ((== hETag) . fst) (responseHeaders res)

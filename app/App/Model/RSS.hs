@@ -25,9 +25,12 @@ import qualified Text.RSS1.Syntax as RSS1
 
 importFeedEntries :: AppEnv -> Maybe Author -> URL -> IO (FeedDetailed, [EntryDetailed])
 importFeedEntries env htmlAuthorM url = do
-  (res, body, finalUrl) <- fetchAndRetryUrl url
+  (res, body, finalUrl) <- fetchUrl url []
   if contentType res == XMLContentType
-    then parseFeedEntries env htmlAuthorM finalUrl body
+    then do
+      (fd, eds) <- parseFeedEntries env htmlAuthorM finalUrl body
+      let etagM = extractETag res
+      return (fd {feedInfo = (feedInfo fd) {feedEtag = etagM}}, eds)
     else throwIO (ImportError url NoFeedFound)
 
 parseFeedEntries :: AppEnv -> Maybe Author -> URL -> BL.ByteString -> IO (FeedDetailed, [EntryDetailed])
@@ -53,6 +56,7 @@ parseFeedEntries env htmlAuthorM url xml = do
             feedName = Just xmlFeedName,
             feedSummary = summaryFromHtml Nothing <$> extractFeedSummary author xmlFeedName xmlFeed,
             feedFormat = feedFormatFromXml xmlFeed,
+            feedEtag = Nothing,
             feedRecentEntryUrl = Nothing,
             feedUpdatedAt = Nothing,
             feedImportedAt = Nothing,
