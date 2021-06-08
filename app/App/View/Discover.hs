@@ -1,18 +1,13 @@
 module App.View.Discover where
 
 import App.Model.Author
-import App.Model.Entry
 import App.Model.Env
 import App.Model.Feed
 import App.Model.FeedDetailed
 import App.Model.Image as Image
-import App.View.Icon as Icon
 import App.View.URL
 import Control.Applicative
 import Control.Monad.Extra
-import Data.List as L
-import Data.Maybe
-import Data.Text
 import Text.Blaze.Html ((!), customAttribute, preEscapedToHtml, textValue, toHtml)
 import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A
@@ -53,24 +48,3 @@ feedSnippetHtml env feedDtld = do
         toHtml (feedDisplayName feedDtld)
     whenJust (feedSummary feed <|> authorNote author) $ \summary -> do
       H.p ! A.class_ "p-summary" $ preEscapedToHtml summary
-    H.hr
-    whenJust (feedRecentEntry feedDtld) $ \e -> do
-      H.p ! A.class_ "p-summary" $ do
-        when (isJust (entryRebloggedAt e)) $ do
-          Icon.reblog ! customAttribute "aria-label" "reblog"
-          toHtml (" " :: Text)
-        whenJust (entryName e) $ \name -> do
-          H.a ! A.href (urlValue (localEntryUrl e)) $ toHtml name
-          when (isJust (entrySummary e)) (toHtml (": " :: Text))
-        whenJust (entrySummary e) $ \summary -> do
-          preEscapedToHtml summary
-          toHtml (" " :: Text)
-        when (not (L.null (entryImageUrls e))) $ do
-          forM_ (entryImageUrls e) $ \imageUrl -> do
-            H.a ! A.href (urlValue imageUrl) $ toHtml $ renderDisplayUrl imageUrl
-        when (not (L.null (entryVideoUrls e))) $ do
-          forM_ (entryVideoUrls e) $ \videoUrl -> do
-            H.a ! A.href (urlValue videoUrl) $ toHtml $ renderDisplayUrl videoUrl
-        when (not (L.null (entryAudioUrls e))) $ do
-          forM_ (entryAudioUrls e) $ \audioUrl -> do
-            H.a ! A.href (urlValue audioUrl) $ toHtml $ renderDisplayUrl audioUrl

@@ -21,7 +21,10 @@ sendHtmlPage s title markup = do
   reqPath <- decodeUtf8 . rawPathInfo <$> request
   appName <- appName <$> env
   userM <- getUser
-  send $ status s $ html $ renderPage appName title reqPath userM markup
+  returnMinimal <- maybe False (== "return-minimal") <$> header "Prefer"
+  if returnMinimal
+    then send $ status s $ html $ renderBody' appName reqPath userM markup
+    else send $ status s $ html $ renderPage appName title reqPath userM markup
 
 getUser :: RouteM AppEnv (Maybe User)
 getUser = do

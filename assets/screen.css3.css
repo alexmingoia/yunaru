@@ -882,23 +882,20 @@ div[role="alert"] .button.outline.is-loading::before {
 
 /* Feed Snippet */
 
-.h-cite.h-feed {
+.h-feed.h-cite {
   background: var(--foreground);
   border: var(--border);
   border-radius: .5rem;
-  padding: 1rem 1rem .5rem 1rem;
+  padding: 1rem;
   margin: 1rem 0;
 }
 
-.h-cite.h-feed .p-summary {
-  margin-bottom: .5rem;
+.h-feed.h-cite .p-summary {
+  margin: 0;
+  color: var(--text-lighter); 
 }
 
-.h-cite.h-feed hr {
-  margin: .5rem 0;
-}
-
-.h-cite.h-feed .byline .p-name {
+.h-feed.h-cite .byline .p-name {
   color: var(--text-normal); 
   font-weight: 500;
 }

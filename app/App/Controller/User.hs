@@ -106,7 +106,7 @@ patchUser user = do
         DB.exec . User.save =<< liftIO (User.setPassword user pass)
       return user
   sessionCookie <- Session.createSessionCookie updatedUser
-  returnNoContent <- maybe False (== "return-no-content") <$> header "Prefer"
+  returnNoContent <- maybe False (== "return-minimal") <$> header "Prefer"
   if returnNoContent
     then return $ withCookie' sessionCookie $ status status204 $ text ""
     else return $ withCookie' sessionCookie $ redirect303 "/"

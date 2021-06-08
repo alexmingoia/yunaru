@@ -51,9 +51,16 @@ renderPage appName title reqPath userM html = renderHtml $ do
         ! A.async mempty
         ! A.src "/assets/progressive-enhancements.js"
         $ mempty
-    H.body $ do
-      pageHeader appName reqPath userM
-      H.main html
+    H.body $ renderBody appName reqPath userM html
+
+renderBody :: Text -> Text -> Maybe User -> Html -> Html
+renderBody appName reqPath userM html = do
+  pageHeader appName reqPath userM
+  H.main html
+
+renderBody' :: Text -> Text -> Maybe User -> Html -> BL.ByteString
+renderBody' appName reqPath userM html =
+  renderHtml $ renderBody appName reqPath userM html
 
 pageHeader appName reqPath userM =
   H.header $ do

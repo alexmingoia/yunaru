@@ -10,9 +10,16 @@ if (supportsQuerySelectors && supportsToLocaleString && supportsFormData) {
   }
 }
 
-window.addEventListener('pageshow', clearButtonLoading);
+window.addEventListener('pageshow', unsetFormLoading);
+window.addEventListener('unload', unsetFormLoading);
+window.addEventListener('submit', setFormLoading);
+window.addEventListener('submit', submitXhrForm);
 
 function enhance() {
+  formatTimestamps();
+}
+
+function formatTimestamps() {
   /* Display timestamps formatted in browser's locale */
   var timeElems = document.getElementsByTagName('time');
   var datetime = '';
@@ -31,22 +38,18 @@ function enhance() {
       }
     }
   }
-
-  window.addEventListener('submit', function(e) {
-    var form = e.target;
-    var submitBtn = form.querySelector('button[type=submit]');
-    if (submitBtn) {
-      /* Disable form on submit */
-      submitBtn.setAttribute('disabled', 'disabled');
-      submitBtn.className = submitBtn.className + ' is-loading';
-    }
-  });
-
-  /* Reset form buttons on page unload. Otherwise, using back button will show invalid button text. */
-  window.addEventListener('unload', clearButtonLoading);
 }
 
-function clearButtonLoading() {
+function setFormLoading(e) {
+  var submitBtn = e.target.querySelector('button[type=submit]');
+  if (submitBtn) {
+    /* Disable form on submit */
+    submitBtn.setAttribute('disabled', 'disabled');
+    submitBtn.className = submitBtn.className + ' is-loading';
+  }
+}
+
+function unsetFormLoading() {
   var buttons = document.querySelectorAll('button[type=submit]');
   for (var i = 0, l = buttons.length; i < l; i++) {
     if (buttons[i].hasAttribute('disabled')) {
@@ -56,12 +59,29 @@ function clearButtonLoading() {
   }
 }
 
+function submitXhrForm(e) {
+  var form = e.target;
+  if (form.hasAttribute('data-xhr')) {
+    e.preventDefault();
+    var action = form.getAttribute('action');
+    var data = new FormData(form);
+    doXHR(action, data, function(err, body) {
+      if (err) {
+        console.log(err);
+        form.submit();
+      }
+      document.body.innerHTML = body;
+      enhance();
+    });
+  }
+}
+
 function doXHR(url, data, cb) {
   var xhr = new XMLHttpRequest();
   var finished = false;
 
   xhr.open('POST', url, true);
-  xhr.setRequestHeader('Prefer', 'return-no-content');
+  xhr.setRequestHeader('Prefer', 'return-minimal');
   xhr.addEventListener('error', function(err) {
     if (!finished) {
       finished = true;

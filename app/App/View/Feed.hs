@@ -91,39 +91,57 @@ feedFollowButtonHtml followingM feedDtld = do
   let isFollowing = isJust followingM
       feed = feedInfo feedDtld
       followFormMethod = if isFollowing then "DELETE" else "PUT"
-      followFormMethodXHR = if isFollowing then "PUT" else "DELETE"
-      followFormAction = rootUrl +> ["followings", renderUrl (feedUrl feed)] ?> [("_method", followFormMethod)]
-      followFormActionXHR = rootUrl +> ["followings", renderUrl (feedUrl feed)] ?> [("_method", followFormMethodXHR)]
+      followFormAction =
+        rootUrl +> ["followings", renderUrl (feedUrl feed)]
+          ?> [("_method", followFormMethod)]
   H.form
     ! A.method "POST"
     ! A.action (urlValue followFormAction)
     ! customAttribute "data-xhr" "true"
-    ! customAttribute "data-xhr-success-label" (if isFollowing then "Follow" else "Unfollow")
-    ! customAttribute "data-xhr-success-action" (urlValue followFormActionXHR)
     $ do
-      H.input ! A.type_ "hidden" ! A.name "redirect_url" ! A.value (urlValue (localFeedUrl feed))
-      H.small $ H.button ! A.type_ "submit" ! A.class_ "button outline" $ if isFollowing then "Unfollow" else "Follow"
+      H.input
+        ! A.type_ "hidden"
+        ! A.name "redirect_url"
+        ! A.value (urlValue (localFeedUrl feed))
+      H.small
+        $ H.button
+          ! A.type_ "submit"
+          ! A.class_ "button outline"
+        $ if isFollowing then "Unfollow" else "Follow"
 
 feedMuteButtonHtml followingM feedDtld = do
   let feed = feedInfo feedDtld
       isFollowing = isJust followingM
       isMuted = maybe False followingMuted followingM
-      muteFormAction = rootUrl +> ["followings", renderUrl (feedUrl feed)] ?> [("_method", "PUT")]
+      muteFormAction =
+        rootUrl +> ["followings", renderUrl (feedUrl feed)]
+          ?> [("_method", "PUT")]
   when isFollowing $ do
     H.form
       ! A.method "POST"
       ! A.action (urlValue muteFormAction)
       ! customAttribute "data-xhr" "true"
-      ! customAttribute "data-xhr-success-label" (if isMuted then "Mute" else "Unmute")
-      ! customAttribute "data-xhr-success-action" (urlValue muteFormAction)
       $ do
-        H.input ! A.type_ "hidden" ! A.name "redirect_url" ! A.value (urlValue (localFeedUrl feed))
-        H.input ! A.type_ "hidden" ! A.name "muted" ! A.value (textValue (if isMuted then "False" else "True"))
-        H.small $ H.button ! A.type_ "submit" ! A.class_ "button outline" $ if isMuted then "Unmute" else "Mute"
+        H.input
+          ! A.type_ "hidden"
+          ! A.name "redirect_url"
+          ! A.value (urlValue (localFeedUrl feed))
+        H.input
+          ! A.type_ "hidden"
+          ! A.name "muted"
+          ! A.value (textValue (if isMuted then "False" else "True"))
+        H.small
+          $ H.button
+            ! A.type_ "submit"
+            ! A.class_ "button outline"
+          $ if isMuted then "Unmute" else "Mute"
 
 noEntriesNoticeHtml feedDtld = do
   H.p $ toHtml $
     authorDisplayName (feedAuthor feedDtld) <> " does not have any entries."
 
 endOfFeedNoticeHtml feedDtld =
-  H.p $ toHtml $ "You've reached the end of " <> possessive (feedDisplayName feedDtld) <> " blog."
+  H.p $ toHtml $
+    "You've reached the end of "
+      <> possessive (feedDisplayName feedDtld)
+      <> " blog."

@@ -59,9 +59,8 @@ followingsRecentEntryHtml env now pageSize beforeM userM err urlP followingsDtld
           $ "More followings →"
   when (L.length followingsDtld > 1) $ do
     H.p $ H.small $ do
-      toHtml ("Looking for more feeds to follow? " :: Text)
       H.a ! A.href "/discover" $ "Discover"
-      toHtml (" selected feeds." :: Text)
+      toHtml (" new feeds." :: Text)
 
 noFollowingsNoticeHtml = do
   H.p $ "Your followings will appear here, along with their most recent entry."
@@ -74,7 +73,7 @@ firstFollowingNoticeHtml = do
       H.span "News Feed"
     toHtml (" to see all posts. Looking for more feeds to follow? " :: Text)
     H.a ! A.href "/discover" $ "Discover"
-    toHtml (" selected feeds." :: Text)
+    toHtml (" new feeds." :: Text)
 
 followingRecentEntrySnippetHtml env now followingDtld = do
   let entryM = followingRecentEntry followingDtld
