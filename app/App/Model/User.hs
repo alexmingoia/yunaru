@@ -22,9 +22,7 @@ data User
         userEmail :: Maybe Email,
         userPassword :: Maybe Text,
         userNewsletterId :: Maybe Text,
-        userStatus :: Text,
-        userPaidUntil :: Maybe UTCTime,
-        userCanceledAt :: Maybe UTCTime,
+        userPaidAt :: Maybe UTCTime,
         userStripeCustomerId :: Maybe Text,
         userCreatedAt :: UTCTime
       }
@@ -46,9 +44,7 @@ emptyUser id createdAt =
       userEmail = Nothing,
       userPassword = Nothing,
       userNewsletterId = Nothing,
-      userStatus = "unpaid",
-      userPaidUntil = Nothing,
-      userCanceledAt = Nothing,
+      userPaidAt = Nothing,
       userStripeCustomerId = Nothing,
       userCreatedAt = createdAt
     }
@@ -57,7 +53,7 @@ userRegistered :: User -> Bool
 userRegistered u = isJust (userPassword u) && isJust (userEmail u)
 
 userPaid :: User -> Bool
-userPaid u = isJust (userPaidUntil u) || userStatus u == "active"
+userPaid u = isJust (userPaidAt u)
 
 findOne :: UUID -> SeldaT PG IO (Maybe User)
 findOne uid = fmap listToMaybe <$> query $ do
@@ -108,9 +104,7 @@ save u = transaction $ do
                          then r ! #userPassword
                          else literal (userPassword u),
                      #userNewsletterId := literal (userNewsletterId u),
-                     #userStatus := literal (userStatus u),
-                     #userPaidUntil := literal (userPaidUntil u),
-                     #userCanceledAt := literal (userCanceledAt u)
+                     #userPaidAt := literal (userPaidAt u)
                    ]
       )
   when (updated == 0) (insert_ users [u])

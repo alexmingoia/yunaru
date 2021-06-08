@@ -7,6 +7,7 @@ import App.Controller.Page
 import App.Model.Crypto
 import App.Model.Database as DB
 import App.Model.Env
+import App.Model.Mnemonic as Mnemonic
 import App.Model.User as User
 import App.View.Session
 import Control.Monad
@@ -66,7 +67,8 @@ getOrCreateUser = do
     Nothing -> do
       id <- liftIO UUIDv4.nextRandom
       now <- liftIO getCurrentTime
-      let user = emptyUser id now
+      newsletterId <- liftIO Mnemonic.nextRandom
+      let user = (emptyUser id now) {userNewsletterId = Just newsletterId}
       DB.exec $ User.save user
       return user
     Just user -> return user

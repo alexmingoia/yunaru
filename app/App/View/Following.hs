@@ -7,9 +7,11 @@ import App.Model.Env
 import App.Model.FeedDetailed
 import App.Model.FollowingDetailed
 import App.Model.Image as Image
+import App.Model.User
 import App.View.Error
 import App.View.Icon as Icon
 import App.View.Language
+import App.View.Payment
 import App.View.URL
 import Control.Monad.Extra
 import Data.List as L
@@ -19,22 +21,30 @@ import Text.Blaze.Html ((!), customAttribute, preEscapedToHtml, textValue, toHtm
 import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A
 
-followingsRecentEntryHtml env now pageSize beforeM err urlP followingsDtld = do
+followingsRecentEntryHtml env now pageSize beforeM userM err urlP followingsDtld = do
   let formActionUrl = rootUrl +> ["followings"]
-  H.form ! A.method "POST" ! A.action (urlValue formActionUrl) $ do
-    whenJust err errorAlertHtml
-    H.div ! A.class_ "form-controls-inline" $ do
-      H.div ! A.class_ "form-control" $ do
-        H.label ! A.class_ "hidden" ! A.for "url" $ "URL to follow"
-        H.input
-          ! A.name "url"
-          ! A.type_ "text"
-          ! A.required mempty
-          ! A.placeholder "Blog / RSS / Twitter / Tumblr / YouTube"
-          ! A.value (textValue urlP)
-          ! A.class_ "input"
-      H.div ! A.class_ "form-control" $ do
-        H.button ! A.type_ "submit" $ "Follow"
+      isPaid = maybe False userPaid userM
+      followedLimit = L.length followingsDtld >= 10 && not isPaid
+  whenJust userM $ \user -> do
+    when followedLimit $ paymentAlertHtml env user
+  H.form
+    ! A.method "POST"
+    ! A.action (urlValue formActionUrl)
+    ! (if followedLimit then A.disabled "disabled" else mempty)
+    $ do
+      whenJust err errorAlertHtml
+      H.div ! A.class_ "form-controls-inline" $ do
+        H.div ! A.class_ "form-control" $ do
+          H.label ! A.class_ "hidden" ! A.for "url" $ "URL to follow"
+          H.input
+            ! A.name "url"
+            ! A.type_ "text"
+            ! A.required mempty
+            ! A.placeholder "Blog / RSS / Twitter / Tumblr / YouTube"
+            ! A.value (textValue urlP)
+            ! A.class_ "input"
+        H.div ! A.class_ "form-control" $ do
+          H.button ! A.type_ "submit" $ "Follow"
   forM_ followingsDtld (followingRecentEntrySnippetHtml env now)
   when (isNothing beforeM && L.null followingsDtld) noFollowingsNoticeHtml
   when (L.length followingsDtld == 1) firstFollowingNoticeHtml

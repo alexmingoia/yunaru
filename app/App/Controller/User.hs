@@ -38,9 +38,10 @@ getNewForm errM = do
   emailM <- paramMaybe "email"
   passwordM <- paramMaybe "password"
   confirmPasswordM <- paramMaybe "confirm_password"
+  payNow <- isJust <$> (paramMaybe "pay" :: RouteM AppEnv (Maybe ()))
   appEnv <- env
   sendHtmlPage (errorStatus errM) "Create Account" $
-    userNewFormHtml appEnv userM emailM passwordM confirmPasswordM errM
+    userNewFormHtml appEnv payNow userM emailM passwordM confirmPasswordM errM
 
 getEditForm :: Text -> Maybe AppError -> RouteM AppEnv a
 getEditForm id errM = do
@@ -65,9 +66,7 @@ put = do
 
 patchUser :: User -> RouteM AppEnv Response
 patchUser user = do
-  e <- env
-  let userUrl = appUrl e +> ["users", UUID.toText (userId user), "edit"]
-      passMatchError = InputError "password" "Passwords do not match."
+  let passMatchError = InputError "password" "Passwords do not match."
       missingEmailError = InputError "email" "Email is required."
       respondError = getForm . Just
   passM <- paramMaybe "password"
@@ -110,7 +109,4 @@ patchUser user = do
   returnNoContent <- maybe False (== "return-no-content") <$> header "Prefer"
   if returnNoContent
     then return $ withCookie' sessionCookie $ status status204 $ text ""
-    else
-      if userPaid user
-        then return $ withCookie' sessionCookie $ redirect303 (renderUrl userUrl)
-        else return $ withCookie' sessionCookie $ redirect303 (renderUrl (appUrl e +> ["payments", "new"]))
+    else return $ withCookie' sessionCookie $ redirect303 "/"

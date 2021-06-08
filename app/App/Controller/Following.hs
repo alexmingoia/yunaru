@@ -36,7 +36,7 @@ getRecentEntryList err = do
       userM
   now <- liftIO getCurrentTime
   sendHtmlPage (errorStatus err) "Following" $
-    followingsRecentEntryHtml appEnv now pageSize beforeM err urlP followingsDtld
+    followingsRecentEntryHtml appEnv now pageSize beforeM userM err urlP followingsDtld
 
 post :: RouteM AppEnv a
 post = do

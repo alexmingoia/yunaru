@@ -10,7 +10,6 @@ import App.Controller.Session as Session
 import App.Model.Crypto as Crypto
 import qualified App.Model.Database as DB
 import App.Model.Env
-import App.Model.Mnemonic as Mnemonic
 import App.Model.Stripe as Stripe
 import App.Model.User as User
 import App.View.Payment
@@ -18,15 +17,11 @@ import qualified Codec.Base16 as Hex
 import Control.Exception (try)
 import Control.Monad (when)
 import Control.Monad.IO.Class (liftIO)
-import Data.Aeson as JSON hiding (json)
-import Data.Aeson.Types
-import qualified Data.ByteString.Lazy as BL
-import Data.List as L
 import Data.Maybe
 import Data.Text as T
 import Data.Text.Encoding
+import Data.Time.Clock
 import Data.UUID as UUID (toText)
-import Network.Wai (strictRequestBody)
 import Web.Twain
 
 getPaymentForm :: RouteM AppEnv a
@@ -62,18 +57,6 @@ getStripeCheckoutSessionId = do
       (StripeCheckoutSession id) <- catchStripeError $ reqStripe e sessionCreate
       send $ text id
 
-redirectToStripeCustomerPortal :: RouteM AppEnv a
-redirectToStripeCustomerPortal = do
-  e <- env
-  user <- Session.requireUser
-  let userUrl = appUrl e +> ["users", UUID.toText (userId user), "edit"]
-  case userStripeCustomerId user of
-    Nothing -> send (redirect303 (renderUrl userUrl))
-    Just cid -> do
-      let portalSessionCreate = StripeCustomerPortalSessionCreate cid userUrl
-      (StripeCustomerPortal url) <- catchStripeError $ reqStripe e portalSessionCreate
-      send $ redirect303 (renderUrl url)
-
 verifyStripeCheckoutSuccess :: RouteM AppEnv a
 verifyStripeCheckoutSuccess = do
   e <- env
@@ -84,58 +67,11 @@ verifyStripeCheckoutSuccess = do
       msg = encodeUtf8 (UUID.toText (userId user) <> ":stripe")
       token = Hex.encode (Crypto.hmac_sha256 key msg)
   when (token /= tokenP) $ send (redirect303 (renderUrl userUrl))
-  newsletterId <- liftIO Mnemonic.nextRandom
-  let updatedUser = user {userStatus = "active", userNewsletterId = Just newsletterId}
+  now <- liftIO getCurrentTime
+  let updatedUser = user {userPaidAt = Just now}
   DB.exec $ User.save updatedUser
   sessionCookie <- Session.createSessionCookie updatedUser
   send $ withCookie' sessionCookie $ redirect303 (renderUrl userUrl)
 
 catchStripeError :: IO a -> RouteM AppEnv a
 catchStripeError = (either (Error.getPlaintext :: StripeError -> RouteM AppEnv a) pure =<<) . liftIO . try
-
-data StripeEvent = StripeEventSubscription StripeSubscription
-
-instance FromJSON StripeEvent where
-  parseJSON (Object v) = do
-    t <- v .: "type"
-    d <- v .: "data"
-    o <- d .: "object"
-    case fst (T.breakOnEnd "." t) of
-      "customer.subscription." -> StripeEventSubscription <$> parseJSON o
-      prefix -> fail $ T.unpack $ "parsing StripeEvent failed, unsupported event type: " <> prefix
-  parseJSON invalid =
-    prependFailure
-      "parsing StripeEvent failed, "
-      (typeMismatch "Object" invalid)
-
-postStripeWebhook :: RouteM AppEnv a
-postStripeWebhook = do
-  let invalidHeaderRes = status status400 $ text "invalid signature header"
-      missingHeaderRes = status status400 $ text "missing signature header"
-  e <- env
-  sigH <- maybe (send missingHeaderRes) pure =<< header "Stripe-Signature"
-  reqBody <- strictRequestBody <$> request
-  reqBodyBS <- BL.toStrict <$> liftIO reqBody
-  let sigParts = fmap (T.drop 1) . T.break (== '=') <$> T.splitOn "," sigH
-      sigField = "v1"
-      secret = encodeUtf8 (appStripeWebhookSecret e)
-  ts <- maybe (send invalidHeaderRes) (pure . snd) $ L.find ((== "t") . fst) sigParts
-  sig <- maybe (send invalidHeaderRes) (pure . snd) $ L.find ((== sigField) . fst) sigParts
-  let payload = encodeUtf8 ts <> "." <> reqBodyBS
-      hmac = Hex.encode $ Crypto.hmac_sha256 secret payload
-  when (hmac /= sig) $ do
-    when (appDebug e) $ do
-      liftIO $ do
-        print "invalid signature"
-        print $ "Computed signature: " <> hmac
-        print $ "Stripe webhook signature: " <> sig
-    send $ status status400 $ text "invalid signature"
-  case eitherDecodeStrict reqBodyBS of
-    Left e -> do
-      liftIO $ putStrLn e
-      send $ status status204 $ text ""
-    Right (StripeEventSubscription s) -> do
-      let customerGet = StripeCustomerGet (stripeSubscriptionCustomerId s)
-      (c :: StripeCustomer) <- catchStripeError $ reqStripe e customerGet
-      DB.exec $ Stripe.updateUserStripeCustomer c s
-      send $ status status204 $ text ""

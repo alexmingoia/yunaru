@@ -40,7 +40,6 @@ serve = do
     get "/magic-links/sent" MagicLink.getSentMessage
     get "/magic-links/:id" MagicLink.get
     get "/payments/new" Payment.getPaymentForm
-    get "/payments/stripe/portal" Payment.redirectToStripeCustomerPortal
     get "/payments/stripe/success/:token" Payment.verifyStripeCheckoutSuccess
     get "/privacy" About.getPrivacyPolicy
     get "/sessions/new" $ Session.getSigninForm Nothing
@@ -55,7 +54,6 @@ serve = do
     post "/sessions" Session.post
     post "/payments/stripe/checkout-sessions" Payment.getStripeCheckoutSessionId
     post "/users" User.post
-    post "/webhooks/stripe" Payment.postStripeWebhook
     post "/webhooks/newsletters" Newsletter.postNewsletterWebhook
     put "/followings/:url" Following.put
     put "/users/:id" User.put

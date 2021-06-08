@@ -714,8 +714,8 @@ div[role="alert"] {
   margin: 1rem 0;
 }
 
-div[role="alert"] > *:first-child { margin-top: 0; }
-div[role="alert"] *:last-child { margin-bottom: 0; }
+div[role="alert"] > *:first-child { margin: 0; }
+div[role="alert"] *:last-child { margin: 0; }
 
 div[role="alert"] p {
   margin-right: 1rem;
@@ -726,7 +726,7 @@ div[role="alert"] .icon {
 }
 
 div[role="alert"] .button.outline {
-  border-color: var(--alert-accent);
+  border-color: var(--alert-text);
   color: var(--alert-text);
 }
 

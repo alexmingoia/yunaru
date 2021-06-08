@@ -5,7 +5,6 @@ module App.View.User where
 import App.Model.Env
 import App.Model.User
 import App.View.Error
-import App.View.Language
 import App.View.Payment
 import Control.Monad.Extra
 import Data.Maybe
@@ -15,27 +14,30 @@ import Text.Blaze.Html ((!), textValue, toHtml)
 import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A
 
-userNewFormHtml env userM emailM passwordM confirmPasswordM errM = do
+userNewFormHtml env payNow userM emailM passwordM confirmPasswordM errM = do
   let formActionUrl =
         case userId <$> userM of
           Nothing ->
             appUrl env +> ["users"]
           Just id ->
             appUrl env +> ["users", UUID.toText id] ?> [("_method", "PUT")]
-  stripeJsHtml env
+      formOnSubmit =
+        if payNow
+          then A.onsubmit "submitFormAndRedirectToCheckout(event)"
+          else mempty
   H.section $ do
     H.h1 "Welcome."
     H.p $ do
-      toHtml ("Create an account and save your feed for a one-time fee of " :: Text)
+      toHtml $ toTitle (appName env) <> " is free to use, limited to 10 followings. Unlimited usage can be unlocked for a one-time fee of "
       H.strong "$19.99"
-      toHtml (". You get unlimited usage, and an email you can use to follow newsletters. There's no tracking, no ads, and your data is kept private." :: Text)
+      toHtml ("." :: Text)
     H.hr
     whenJust errM errorAlertHtml
     H.form
       ! A.method "POST"
       ! A.action (urlValue formActionUrl)
       ! A.enctype "multipart/form-data"
-      ! A.onsubmit "submitFormAndRedirectToCheckout(event);"
+      ! formOnSubmit
       $ do
         H.div ! A.class_ "form-control" $ do
           H.label ! A.for "email" $ "Email Address"
@@ -67,10 +69,11 @@ userNewFormHtml env userM emailM passwordM confirmPasswordM errM = do
             ! A.class_ (errorClass "password-confirm" "input" errM)
         H.div ! A.class_ "form-control" $ do
           H.button ! A.type_ "submit" $ "Create account"
+  stripeJsHtml env
 
 userEditFormHtml env user pendingEmailM emailM errM = do
   stripeJsHtml env
-  when (not (userPaid user)) $ paymentIncompleteAlertHtml env user
+  when (not (userPaid user)) $ paymentAlertHtml env user
   whenJust (userNewsletterId user) $ \newsletterId -> do
     H.section $ do
       H.h2 "Newsletters"
@@ -135,5 +138,3 @@ userEditFormHtml env user pendingEmailM emailM errM = do
     let formActionUrl = (appUrl env +> ["sessions", uid]) ?> [("_method", "DELETE")]
     H.form ! A.method "POST" ! A.action (urlValue formActionUrl) $ do
       H.small $ H.button ! A.class_ "button outline" ! A.type_ "submit" $ "Sign out"
-
-timeHtml t = H.time ! A.datetime (textValue (formatTime8601 t)) $ toHtml $ formatTimeHuman t

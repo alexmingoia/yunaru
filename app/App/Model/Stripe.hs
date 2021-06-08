@@ -5,7 +5,6 @@ module App.Model.Stripe where
 
 import App.Model.Env
 import App.Model.Selda
-import App.Model.User
 import Control.Exception
 import Control.Monad
 import Control.Monad.Fail
@@ -105,35 +104,6 @@ instance FromJSON StripeSubscription where
       "parsing StripeSubscription failed, "
       (typeMismatch "Object" invalid)
 
-data StripeCustomerPortal = StripeCustomerPortal URL
-
-instance FromJSON StripeCustomerPortal where
-  parseJSON (Object v) = do
-    urlM <- (parseUrl =<<) <$> v .: "url"
-    url <- maybe (Control.Monad.Fail.fail "invalid url") pure urlM
-    return $ StripeCustomerPortal url
-  parseJSON invalid =
-    prependFailure
-      "parsing StripeCustomerPortal failed, "
-      (typeMismatch "Object" invalid)
-
-data StripeCustomerPortalSessionCreate
-  = StripeCustomerPortalSessionCreate
-      { stripeCustomerPortalSessionCreateCustomer :: Text,
-        stripeCustomerPortalSessionCreateReturnUrl :: URL
-      }
-  deriving (Show)
-
-instance StripeApiRequest StripeCustomerPortalSessionCreate where
-  stripeApiMethod _ = "POST"
-  stripeApiPath _ = "/billing_portal/sessions"
-  stripeApiBody (StripeCustomerPortalSessionCreate cid url) =
-    encodeUtf8 $
-      "customer="
-        <> cid
-        <> "&return_url="
-        <> renderUrl url
-
 data StripeCheckoutSessionCreate
   = StripeCheckoutSessionCreate
       { checkoutCancelUrl :: URL,
@@ -171,21 +141,6 @@ instance FromJSON StripeCheckoutSession where
     prependFailure
       "parsing StripeCheckoutSession failed, "
       (typeMismatch "Object" invalid)
-
-updateUserStripeCustomer :: StripeCustomer -> StripeSubscription -> SeldaT PG IO ()
-updateUserStripeCustomer c s = do
-  let email = lowercaseEmail <$> stripeCustomerEmail c
-  update_
-    users
-    (\u -> u ! #userEmail .== literal email .|| u ! #userStripeCustomerId .== literal (Just (stripeCustomerId c)))
-    ( \u ->
-        u
-          `with` [ #userStripeCustomerId := literal (Just (stripeCustomerId c)),
-                   #userStatus := literal (stripeSubscriptionStatus s),
-                   #userPaidUntil := literal (Just (stripeSubscriptionCurrentPeriodEnd s)),
-                   #userCanceledAt := literal (stripeSubscriptionCanceledAt s)
-                 ]
-    )
 
 parseJSTime :: (MonadFail m) => Int -> m UTCTime
 parseJSTime n = parseTimeM False defaultTimeLocale "%s" (show n)

@@ -4,8 +4,7 @@ create table users (
   password text,
   status text not null default 'unpaid',
   newsletter_id text unique,
-  paid_until timestamptz,
-  canceled_at timestamptz,
+  paid_at timestamptz,
   stripe_customer_id text,
   created_at timestamptz not null
 );

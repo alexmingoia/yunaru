@@ -47,6 +47,17 @@ packages:
   original:
     hackage: base58-bytestring-0.1.0@sha256:a1da72ee89d5450bac1c792d9fcbe95ed7154ab7246f2172b57bd4fd9b5eab79,1913
 - completed:
+    name: feed
+    version: 1.3.2.0
+    git: git://github.com/alexmingoia/feed
+    pantry-tree:
+      size: 3666
+      sha256: 2e04a75847721986ae982bb3bea0d52a81135b68caf4af2219cd76e3f0c6f658
+    commit: eb411e2bfb0b289486475bb0c54da63ba2430cfd
+  original:
+    git: git://github.com/alexmingoia/feed
+    commit: eb411e2bfb0b289486475bb0c54da63ba2430cfd
+- completed:
     name: webmention
     version: 0.1.0.0
     git: git://github.com/alexmingoia/webmention
