@@ -76,15 +76,15 @@ entryBylineHtml now entryDtld = do
         ! A.href (urlValue reblogHref)
         ! A.class_ "reblogged-by"
         $ toHtml reblogName
-    whenJust (entryPublishedAt entry) $ \publishedAt -> do
+    whenJust (entryRebloggedOrPublishedAt entry) $ \ts -> do
       H.span " • "
       H.a ! A.href (urlValue (canonicalEntryUrl entry)) $ do
         H.time
           ! A.class_ "dt-published"
-          ! A.datetime (textValue (formatTime8601 publishedAt))
+          ! A.datetime (textValue (formatTime8601 ts))
           ! A.pubdate mempty
-          ! A.title (textValue (formatTimeHuman publishedAt))
-          $ toHtml (formatTimeAgoCompact now publishedAt)
+          ! A.title (textValue (formatTimeHuman ts))
+          $ toHtml (formatTimeAgoCompact now ts)
 
 entrySnippetHtml env now entryDtld = do
   let entry = entryInfo entryDtld

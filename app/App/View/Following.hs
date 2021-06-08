@@ -88,12 +88,12 @@ followingRecentEntrySnippetHtml env now followingDtld = do
       when isMuted $ do
         H.span " · "
         H.a ! A.href (urlValue (localFeedUrl feed)) $ H.span $ "Muted"
-      whenJust (entryPublishedAt =<< entryM) $ \publishedAt -> do
+      whenJust (entryRebloggedOrPublishedAt =<< entryM) $ \ts -> do
         H.span " · "
         H.time
-          ! A.datetime (textValue (formatTime8601 publishedAt))
-          ! A.title (textValue (formatTimeHuman publishedAt))
-          $ toHtml (formatTimeAgoCompact now publishedAt)
+          ! A.datetime (textValue (formatTime8601 ts))
+          ! A.title (textValue (formatTimeHuman ts))
+          $ toHtml (formatTimeAgoCompact now ts)
     case entryM of
       Nothing -> do
         H.p ! A.class_ "p-summary" $ "No recent entry."
