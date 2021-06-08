@@ -916,3 +916,7 @@ div[role="alert"] .button.outline.is-loading::before {
 .u-follow-of .p-summary {
   color: var(--text-normal);
 }
+
+.u-follow-of .byline a:last-child {
+  float: right;
+}

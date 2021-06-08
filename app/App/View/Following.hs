@@ -92,7 +92,7 @@ followingRecentEntrySnippetHtml env now followingDtld = do
             ! A.height "32"
             ! customAttribute "aria-hidden" "true"
             ! A.alt (textValue (feedDisplayName feedDtld))
-      H.a ! A.href (urlValue (localFeedUrl feed)) ! A.class_ "p-name" $
+      H.a ! A.href (urlValue (canonicalAuthorUrl author)) ! A.class_ "p-name" $
         toHtml (feedDisplayName feedDtld)
       when isMuted $ do
         H.span " · "
@@ -103,6 +103,10 @@ followingRecentEntrySnippetHtml env now followingDtld = do
           ! A.datetime (textValue (formatTime8601 ts))
           ! A.title (textValue (formatTimeHuman ts))
           $ toHtml (formatTimeAgoCompact now ts)
+      H.a
+        ! A.href (urlValue (localFeedUrl feed))
+        ! A.title "Feed"
+        $ Icon.ellipsis
     case entryM of
       Nothing -> do
         H.p ! A.class_ "p-summary" $ "No recent entry."
