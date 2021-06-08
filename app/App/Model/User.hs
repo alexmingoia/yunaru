@@ -10,6 +10,7 @@ import App.Model.Selda
 import Control.Monad
 import Crypto.KDF.BCrypt as BCrypt
 import Data.Aeson as JSON
+import Data.Aeson.Types
 import Data.Maybe
 import Data.Text
 import Data.Text.Encoding
@@ -30,7 +31,30 @@ data User
 
 instance SqlRow User
 
-instance FromJSON User
+instance FromJSON User where
+  parseJSON (Object o) = do
+    id <- o .: "userId"
+    email <- o .: "userEmail"
+    newsletterId <- o .:? "userNewsletterId"
+    (statusM :: Maybe Text) <- o .:? "userStatus"
+    paidAt <- o .:? "userPaidAt"
+    let isActive = maybe False (== "active") statusM
+    stripeCustomerId <- o .:? "userStripeCustomerId"
+    createdAt <- o .: "userCreatedAt"
+    return $
+      User
+        { userId = id,
+          userEmail = email,
+          userPassword = Nothing,
+          userNewsletterId = newsletterId,
+          userPaidAt = if isActive then Just createdAt else paidAt,
+          userStripeCustomerId = stripeCustomerId,
+          userCreatedAt = createdAt
+        }
+  parseJSON invalid =
+    prependFailure
+      "parsing User failed, "
+      (typeMismatch "Object" invalid)
 
 instance ToJSON User
 
