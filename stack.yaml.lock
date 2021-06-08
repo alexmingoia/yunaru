@@ -47,17 +47,6 @@ packages:
   original:
     hackage: base58-bytestring-0.1.0@sha256:a1da72ee89d5450bac1c792d9fcbe95ed7154ab7246f2172b57bd4fd9b5eab79,1913
 - completed:
-    name: feed
-    version: 1.3.2.0
-    git: git://github.com/bergmark/feed
-    pantry-tree:
-      size: 3666
-      sha256: ada23ff2694aac67a8dda31f911bf5329d53d4d0a068177cd978e19ae6a52020
-    commit: e995d8695c5d4c7479fe46955a9fe5b105a33753
-  original:
-    git: git://github.com/bergmark/feed
-    commit: e995d8695c5d4c7479fe46955a9fe5b105a33753
-- completed:
     name: webmention
     version: 0.1.0.0
     git: git://github.com/alexmingoia/webmention

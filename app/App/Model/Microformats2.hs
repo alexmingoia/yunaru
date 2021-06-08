@@ -90,19 +90,12 @@ importAuthor url = do
 
 authorFromHtml :: URL -> BL.ByteString -> Maybe Author
 authorFromHtml url html =
-  let a = authorFromTags url (emptyAuthor url) $ headTags $ TS.parseTags html
-   in if isJust (authorName a) then Just a else Nothing
+  authorFromTags url (emptyAuthor url) $ TS.parseTags html
 
-headTags :: [TS.Tag BL.ByteString] -> [TS.Tag BL.ByteString]
-headTags tss = L.takeWhile beforeBody tss
-  where
-    beforeBody (TS.TagClose "head") = False
-    beforeBody _ = True
-
-authorFromTags :: URL -> Author -> [TS.Tag BL.ByteString] -> Author
-authorFromTags url a tags =
-  let nameM = authorNameFromTags tags
-      noteM = listToMaybe $ catMaybes $ authorNoteFromTag <$> tags
+authorFromTags :: URL -> Author -> [TS.Tag BL.ByteString] -> Maybe Author
+authorFromTags url a tags = do
+  name <- nullifyText =<< authorNameFromTags tags
+  let noteM = listToMaybe $ catMaybes $ authorNoteFromTag <$> tags
       icons = L.reverse $ L.sortOn fst (catMaybes (authorIconFromTag <$> tags))
       iconM = snd <$> listToMaybe icons
       ogImageM = listToMaybe $ catMaybes (authorOgImageFromTag <$> tags)
@@ -110,11 +103,12 @@ authorFromTags url a tags =
         if isYoutube url
           then (ogImageM <|> iconM)
           else (iconM <|> ogImageM)
-   in a
-        { authorName = nullifyText =<< nameM,
-          authorNote = nullifyText =<< noteM,
-          authorImageUrl = flip relativeTo url <$> imageUrlM
-        }
+  return $
+    a
+      { authorName = Just name,
+        authorNote = nullifyText =<< noteM,
+        authorImageUrl = flip relativeTo url <$> imageUrlM
+      }
 
 isYoutube :: URL -> Bool
 isYoutube url = "youtube" `T.isInfixOf` fromMaybe "" (renderAuthority url)

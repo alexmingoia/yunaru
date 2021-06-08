@@ -20,7 +20,6 @@ import Data.Time.Clock
 
 delay = 3000000 -- three second delay between batches
 
--- TODO: Import reblogged author feeds.
 performJobs :: IO ()
 performJobs = do
   forkIO $ importFeedsJob

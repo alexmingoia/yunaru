@@ -37,15 +37,7 @@ updateFeed env feedDtld = do
       now <- getCurrentTime
       let oneWeekAgo = addUTCTime (-604800) now
       if authorImportedAt author < Just oneWeekAgo
-        then do
-          (_, body, url) <- HTTP.fetchUrl (authorUrl author) []
-          let htmlAuthorM = Microformats2.authorFromHtml url body
-              updatedAuthor =
-                maybe
-                  author
-                  (\a -> a {authorImportedAt = Just now})
-                  htmlAuthorM
-          updateFeed env (feedDtld {feedAuthor = updatedAuthor})
+        then RSS.importFeedEntries env Nothing (feedUrl feed)
         else do
           (res, body, url) <- HTTP.fetchUrl (feedUrl feed) (feedHeaders feed)
           if responseStatus res == status304

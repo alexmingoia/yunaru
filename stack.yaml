@@ -46,8 +46,8 @@ extra-deps:
 - amazonka-ses-1.6.1@sha256:335796c855121ca34affd35097676587d5ebe0b2e576da42faaedd9d163881b0,6425
 - amazonka-s3-1.6.1@sha256:9d07240fca59ad5197fb614ce3051e701e4951e6d4625a2dab4a9c17a1900194,6317
 - base58-bytestring-0.1.0@sha256:a1da72ee89d5450bac1c792d9fcbe95ed7154ab7246f2172b57bd4fd9b5eab79,1913
-- git: git://github.com/bergmark/feed
-  commit: e995d8695c5d4c7479fe46955a9fe5b105a33753
+- git: git://github.com/alexmingoia/feed
+  commit: eb411e2bfb0b289486475bb0c54da63ba2430cfd
 - git: git://github.com/alexmingoia/webmention
   commit: 97e580a2d3407bf707967748a0a9449132476e83
 - git: git://github.com/alexmingoia/twain
