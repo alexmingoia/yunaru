@@ -7,6 +7,7 @@ import App.Model.EntryDetailed
 import App.Model.Env
 import App.Model.FeedDetailed as FeedDetailed
 import App.View.Language
+import Control.Applicative
 import Control.Exception
 import Control.Lens
 import qualified Data.ByteString.Lazy as BL
@@ -77,7 +78,7 @@ importFeedEntries env url = do
 authorFromTwUser :: TWT.User -> Author
 authorFromTwUser u =
   (emptyAuthor (userUrl u))
-    { authorName = Just $ userName u,
+    { authorName = nullifyText (userName u) <|> Just (userScreenName u),
       authorNote = nullifyText =<< userDescription u,
       authorImageUrl = parseAbsoluteUrl =<< userProfileImageURLHttps u
     }

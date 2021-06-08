@@ -135,7 +135,7 @@ formatTimeAgoCompact now ts
 
 nullifyText :: Text -> Maybe Text
 nullifyText txt =
-  let stripped = T.strip txt
+  let stripped = T.dropAround (\c -> not (isPrint c) || isSpace c) txt
    in if T.null stripped then Nothing else Just stripped
 
 -- | Date/Time
