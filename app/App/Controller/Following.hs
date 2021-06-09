@@ -16,8 +16,12 @@ import App.Model.RemoteFeed as RemoteFeed
 import App.Model.User as User
 import App.View.Following
 import App.View.Language
+import Control.Applicative ((<|>))
 import Control.Exception
+import Data.ByteString.Base58
+import qualified Data.ByteString.Lazy as BL
 import Data.Maybe
+import Data.Text.Encoding
 import Data.Time.Clock
 import Data.UUID as UUID
 import Web.Twain
@@ -43,11 +47,17 @@ listShared :: RouteM AppEnv a
 listShared = do
   appEnv <- env
   beforeM <- (parseDateTime =<<) <$> paramMaybe "before"
-  uid <- maybe NotFound.get pure =<< ((UUID.fromText =<<) <$> paramMaybe "uid")
+  uid <- maybe NotFound.get pure =<< ((parseUuid =<<) <$> paramMaybe "uid")
   followingsDtld <- DB.exec $ FollowingDetailed.find pageSize beforeM uid
   now <- liftIO getCurrentTime
   sendHtmlPage status200 "Shared Followings" $
     followingsSharedHtml appEnv now pageSize beforeM followingsDtld
+  where
+    parseUuid a =
+      UUID.fromText a
+        <|> ( UUID.fromByteString . BL.fromStrict
+                =<< decodeBase58 bitcoinAlphabet (encodeUtf8 a)
+            )
 
 post :: RouteM AppEnv a
 post = do

@@ -7,8 +7,11 @@ import App.Model.User
 import App.View.Error
 import App.View.Payment
 import Control.Monad.Extra
+import Data.ByteString.Base58
+import qualified Data.ByteString.Lazy as BL
 import Data.Maybe
 import Data.Text
+import Data.Text.Encoding
 import Data.UUID as UUID
 import Text.Blaze.Html ((!), textValue, toHtml)
 import qualified Text.Blaze.Html5 as H
@@ -80,7 +83,8 @@ userEditFormHtml env user pendingEmailM emailM errM = do
       H.p $ toHtml $ newsletterId <> "@" <> renderDisplayUrl (appUrl env)
       H.p $ H.small $ "Subscribe to newsletters using this email and they will appear in your feed."
   H.section $ do
-    let shareUrl = appUrl env +> ["followings", "shared", UUID.toText (userId user)]
+    let uid = encodeBase58 bitcoinAlphabet $ BL.toStrict $ UUID.toByteString (userId user)
+        shareUrl = appUrl env +> ["followings", "shared", decodeUtf8 uid]
     H.h2 "Share Followings"
     H.p $ H.a ! A.href (urlValue shareUrl) $ toHtml $ renderDisplayUrl shareUrl
     H.p $ H.small $ "Share your followings with others."
