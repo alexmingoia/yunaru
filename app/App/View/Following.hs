@@ -99,10 +99,16 @@ followingRecentEntrySnippetHtml env now followingDtld = do
         H.a ! A.href (urlValue (localFeedUrl feed)) $ H.span $ "Muted"
       whenJust (entryRebloggedOrPublishedAt =<< entryM) $ \ts -> do
         H.span " · "
-        H.time
-          ! A.datetime (textValue (formatTime8601 ts))
-          ! A.title (textValue (formatTimeHuman ts))
-          $ toHtml (formatTimeAgoCompact now ts)
+        let timestampHtml =
+              H.time
+                ! A.datetime (textValue (formatTime8601 ts))
+                ! A.title (textValue (formatTimeHuman ts))
+                $ toHtml (formatTimeAgoCompact now ts)
+        case entryM of
+          Nothing ->
+            timestampHtml
+          Just e ->
+            H.a ! A.href (urlValue (canonicalEntryUrl e)) $ timestampHtml
       H.a
         ! A.href (urlValue (localFeedUrl feed))
         ! A.title "Feed"
