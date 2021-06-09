@@ -168,18 +168,22 @@ discoverHtml env discoverUrl categoryM feedsDtld = do
 feedSnippetHtml env feedDtld = do
   let feed = feedInfo feedDtld
       author = feedAuthor feedDtld
-  H.div ! A.class_ "h-cite h-feed" $ do
-    H.div ! A.class_ "byline" $ do
-      whenJust (Image.cacheUrl env 128 128 True <$> authorImageUrl author) $ \imageUrl -> do
-        H.a ! A.href (urlValue (localFeedUrl feed)) ! A.class_ "image" $ do
-          H.img
-            ! A.class_ "u-photo"
-            ! A.src (urlValue imageUrl)
-            ! A.width "32"
-            ! A.height "32"
-            ! customAttribute "aria-hidden" "true"
-            ! A.alt (textValue (feedDisplayName feedDtld))
-      H.a ! A.href (urlValue (localFeedUrl feed)) ! A.class_ "p-name" $
-        toHtml (feedDisplayName feedDtld)
-    whenJust (feedSummary feed <|> authorNote author) $ \summary -> do
-      H.p ! A.class_ "p-summary" $ preEscapedToHtml summary
+  H.div
+    ! A.class_ "h-cite h-feed"
+    ! customAttribute "data-href" (urlValue (localFeedUrl feed))
+    ! A.onclick "event.preventDefault(); window.location.href = event.currentTarget.getAttribute('data-href');"
+    $ do
+      H.div ! A.class_ "byline" $ do
+        whenJust (Image.cacheUrl env 128 128 True <$> authorImageUrl author) $ \imageUrl -> do
+          H.a ! A.href (urlValue (localFeedUrl feed)) ! A.class_ "image" $ do
+            H.img
+              ! A.class_ "u-photo"
+              ! A.src (urlValue imageUrl)
+              ! A.width "32"
+              ! A.height "32"
+              ! customAttribute "aria-hidden" "true"
+              ! A.alt (textValue (feedDisplayName feedDtld))
+        H.a ! A.href (urlValue (localFeedUrl feed)) ! A.class_ "p-name" $
+          toHtml (feedDisplayName feedDtld)
+      whenJust (feedSummary feed <|> authorNote author) $ \summary -> do
+        H.p ! A.class_ "p-summary" $ preEscapedToHtml summary

@@ -900,6 +900,17 @@ div[role="alert"] .button.outline.is-loading::before {
   font-weight: 500;
 }
 
+@media screen and (hover: hover) {
+  div[data-href].h-feed.h-cite {
+    transition: .25s border-color ease;
+  }
+
+  div[data-href].h-feed.h-cite:hover {
+    border-color: var(--border-color-darker);
+    cursor: pointer;
+  }
+}
+
 /* Following Snippet */
 
 .u-follow-of {
