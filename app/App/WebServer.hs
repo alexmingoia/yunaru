@@ -35,7 +35,10 @@ serve = do
     get "/" $ Entry.getFollowing Nothing
     get "/authors/:url" Author.get
     get "/discover" $ Discover.list
-    get "/followings" $ Following.getRecentEntryList Nothing
+    get "/feeds/:url" Feed.get
+    get "/feeds/:feedUrl/entries/:entryUrl" Entry.get
+    get "/followings" $ Following.list Nothing
+    get "/followings/shared/:uid" Following.listShared
     get "/magic-links/new" $ MagicLink.getForm Nothing
     get "/magic-links/sent" MagicLink.getSentMessage
     get "/magic-links/:id" MagicLink.get
@@ -46,8 +49,6 @@ serve = do
     get "/terms" About.getTerms
     get "/users/new" $ User.getForm Nothing
     get "/users/:id/edit" $ User.getForm Nothing
-    get "/feeds/:url" Feed.get
-    get "/feeds/:feedUrl/entries/:entryUrl" Entry.get
     post "/" Following.post
     post "/followings" Following.post
     post "/magic-links" MagicLink.post

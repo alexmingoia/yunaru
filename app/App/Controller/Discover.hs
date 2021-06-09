@@ -5,7 +5,7 @@ import App.Controller.Session as Session
 import App.Model.Database as DB
 import App.Model.Env
 import App.Model.FeedDetailed as FeedDetailed
-import App.View.Discover
+import App.View.Feed
 import System.Random.Shuffle
 import Web.Twain
 

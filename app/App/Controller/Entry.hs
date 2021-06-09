@@ -10,6 +10,7 @@ import App.Model.EntryDetailed as EntryDetailed
 import App.Model.Env
 import App.Model.FeedDetailed as FeedDetailed
 import App.View.Entry
+import App.View.Following
 import App.View.Language
 import Data.List as L
 import Data.Time.Clock

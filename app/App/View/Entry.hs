@@ -7,7 +7,6 @@ import App.Model.EntryDetailed
 import App.Model.Env
 import App.Model.Image as Image
 import App.Model.Twitter as Twitter
-import App.View.Discover
 import App.View.Icon as Icon
 import App.View.Language
 import App.View.URL
@@ -20,42 +19,6 @@ import Data.Text as T
 import Text.Blaze.Html ((!), customAttribute, preEscapedToHtml, textValue, toHtml)
 import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A
-
-followingEntriesHtml env now pageSize beforeM categoryM entriesDtld feedsDtld = do
-  when (isNothing beforeM && L.null entriesDtld) noFollowingEntriesNoticeHtml
-  when (L.null entriesDtld) $ do
-    H.div ! A.class_ "separator" $ Icon.handDrawnLine
-    discoverHtml env (appUrl env) categoryM feedsDtld
-  forM_ entriesDtld (entrySnippetHtml env now)
-  when (isJust beforeM && pageSize /= L.length entriesDtld) endOfEntriesNoticeHtml
-  when (pageSize == L.length entriesDtld) $ do
-    let leastPublishedAtM = entryRebloggedOrPublishedAt (entryInfo (L.minimum entriesDtld))
-    whenJust leastPublishedAtM $ \leastPublishedAt -> do
-      let nextPageUrl = rootUrl ?> [("before", formatTime8601 leastPublishedAt)]
-      H.nav $ do
-        H.a
-          ! A.href (urlValue nextPageUrl)
-          ! A.class_ "button"
-          $ "More entries →"
-
-endOfEntriesNoticeHtml = do
-  H.p $ "You've reached the end of your feed. This may be a good time for a break."
-
-noFollowingEntriesNoticeHtml = do
-  H.h1 "A peaceful news feed."
-  H.p "Follow RSS, Twitter, newsletters, and more. No ads, algorithm, or distractions."
-  H.form ! A.method "POST" ! A.action "/followings" $ do
-    H.div ! A.class_ "form-controls-inline" $ do
-      H.div ! A.class_ "form-control" $ do
-        H.label ! A.class_ "hidden" ! A.for "url" $ "URL to follow"
-        H.input
-          ! A.name "url"
-          ! A.type_ "text"
-          ! A.required mempty
-          ! A.placeholder "Blog / RSS / Twitter / Tumblr / YouTube"
-          ! A.class_ "input"
-      H.div ! A.class_ "form-control" $ do
-        H.button ! A.type_ "submit" $ "Follow"
 
 entryBylineHtml now entryDtld = do
   let entry = entryInfo entryDtld

@@ -80,6 +80,11 @@ userEditFormHtml env user pendingEmailM emailM errM = do
       H.p $ toHtml $ newsletterId <> "@" <> renderDisplayUrl (appUrl env)
       H.p $ H.small $ "Subscribe to newsletters using this email and they will appear in your feed."
   H.section $ do
+    let shareUrl = appUrl env +> ["followings", "shared", UUID.toText (userId user)]
+    H.h2 "Share Followings"
+    H.p $ H.a ! A.href (urlValue shareUrl) $ toHtml $ renderDisplayUrl shareUrl
+    H.p $ H.small $ "Share your followings with others."
+  H.section $ do
     H.h2 "Account"
     whenJust errM errorAlertHtml
     whenJust pendingEmailM $ \email -> do

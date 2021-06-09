@@ -8,7 +8,9 @@ import App.Model.FeedDetailed
 import App.Model.FollowingDetailed
 import App.Model.Image as Image
 import App.Model.User
+import App.View.Entry
 import App.View.Error
+import App.View.Feed
 import App.View.Icon as Icon
 import App.View.Language
 import App.View.Payment
@@ -21,7 +23,43 @@ import Text.Blaze.Html ((!), customAttribute, preEscapedToHtml, textValue, toHtm
 import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A
 
-followingsRecentEntryHtml env now pageSize beforeM userM err urlP followingsDtld = do
+followingEntriesHtml env now pageSize beforeM categoryM entriesDtld feedsDtld = do
+  when (isNothing beforeM && L.null entriesDtld) noFollowingEntriesNoticeHtml
+  when (L.null entriesDtld) $ do
+    H.div ! A.class_ "separator" $ Icon.handDrawnLine
+    discoverHtml env (appUrl env) categoryM feedsDtld
+  forM_ entriesDtld (entrySnippetHtml env now)
+  when (isJust beforeM && pageSize /= L.length entriesDtld) endOfEntriesNoticeHtml
+  when (pageSize == L.length entriesDtld) $ do
+    let leastPublishedAtM = entryRebloggedOrPublishedAt (entryInfo (L.minimum entriesDtld))
+    whenJust leastPublishedAtM $ \leastPublishedAt -> do
+      let nextPageUrl = rootUrl ?> [("before", formatTime8601 leastPublishedAt)]
+      H.nav $ do
+        H.a
+          ! A.href (urlValue nextPageUrl)
+          ! A.class_ "button"
+          $ "More entries →"
+
+endOfEntriesNoticeHtml = do
+  H.p $ "You've reached the end of your feed. This may be a good time for a break."
+
+noFollowingEntriesNoticeHtml = do
+  H.h1 "A peaceful news feed."
+  H.p "Follow RSS, Twitter, newsletters, and more. No ads, algorithm, or distractions."
+  H.form ! A.method "POST" ! A.action "/followings" $ do
+    H.div ! A.class_ "form-controls-inline" $ do
+      H.div ! A.class_ "form-control" $ do
+        H.label ! A.class_ "hidden" ! A.for "url" $ "URL to follow"
+        H.input
+          ! A.name "url"
+          ! A.type_ "text"
+          ! A.required mempty
+          ! A.placeholder "Blog / RSS / Twitter / Tumblr / YouTube"
+          ! A.class_ "input"
+      H.div ! A.class_ "form-control" $ do
+        H.button ! A.type_ "submit" $ "Follow"
+
+followingsHtml env now pageSize beforeM userM err urlP followingsDtld = do
   let formActionUrl = rootUrl +> ["followings"]
       isPaid = maybe False userPaid userM
       followedLimit = L.length followingsDtld >= 10 && not isPaid
@@ -45,7 +83,7 @@ followingsRecentEntryHtml env now pageSize beforeM userM err urlP followingsDtld
             ! A.class_ "input"
         H.div ! A.class_ "form-control" $ do
           H.button ! A.type_ "submit" $ "Follow"
-  forM_ followingsDtld (followingRecentEntrySnippetHtml env now)
+  forM_ followingsDtld (followingSnippetHtml env now)
   when (isNothing beforeM && L.null followingsDtld) noFollowingsNoticeHtml
   when (L.length followingsDtld == 1) firstFollowingNoticeHtml
   when (pageSize == L.length followingsDtld) $ do
@@ -62,8 +100,27 @@ followingsRecentEntryHtml env now pageSize beforeM userM err urlP followingsDtld
       H.a ! A.href "/discover" $ "Discover"
       toHtml (" new feeds." :: Text)
 
+followingsSharedHtml env now pageSize beforeM followingsDtld = do
+  H.h1 "Someone has shared their followings with you."
+  H.p $ do
+    toHtml $ "They use " <> appName env <> " to read RSS, Twitter, and newsletters in one peaceful feed."
+  forM_ followingsDtld $ \followingDtld -> do
+    let feed = followingFeed followingDtld
+        author = followingAuthor followingDtld
+    feedSnippetHtml env (feedDetailed feed author)
+  when (isNothing beforeM && L.null followingsDtld) noFollowingsNoticeHtml
+  when (pageSize == L.length followingsDtld) $ do
+    let leastUpdatedAtM = feedUpdatedAt (followingFeed (L.minimum followingsDtld))
+    whenJust leastUpdatedAtM $ \leastUpdatedAt -> do
+      let nextPageUrl = rootUrl +> ["followings"] ?> [("before", formatTime8601 leastUpdatedAt)]
+      H.nav $ do
+        H.a
+          ! A.href (urlValue nextPageUrl)
+          ! A.class_ "button"
+          $ "More followings →"
+
 noFollowingsNoticeHtml = do
-  H.p $ "Your followings will appear here, along with their most recent entry."
+  H.p $ "Followings will appear here, along with their most recent entry."
 
 firstFollowingNoticeHtml = do
   H.p $ H.small $ do
@@ -75,7 +132,7 @@ firstFollowingNoticeHtml = do
     H.a ! A.href "/discover" $ "Discover"
     toHtml (" new feeds." :: Text)
 
-followingRecentEntrySnippetHtml env now followingDtld = do
+followingSnippetHtml env now followingDtld = do
   let entryM = followingRecentEntry followingDtld
       isMuted = followingMuted (followingInfo followingDtld)
       feed = followingFeed followingDtld

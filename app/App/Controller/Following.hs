@@ -19,12 +19,13 @@ import App.View.Language
 import Control.Exception
 import Data.Maybe
 import Data.Time.Clock
+import Data.UUID as UUID
 import Web.Twain
 
 pageSize = 50
 
-getRecentEntryList :: Maybe AppError -> RouteM AppEnv a
-getRecentEntryList err = do
+list :: Maybe AppError -> RouteM AppEnv a
+list err = do
   appEnv <- env
   urlP <- fromMaybe "" <$> paramMaybe "url"
   beforeM <- (parseDateTime =<<) <$> paramMaybe "before"
@@ -36,7 +37,17 @@ getRecentEntryList err = do
       userM
   now <- liftIO getCurrentTime
   sendHtmlPage (errorStatus err) "Following" $
-    followingsRecentEntryHtml appEnv now pageSize beforeM userM err urlP followingsDtld
+    followingsHtml appEnv now pageSize beforeM userM err urlP followingsDtld
+
+listShared :: RouteM AppEnv a
+listShared = do
+  appEnv <- env
+  beforeM <- (parseDateTime =<<) <$> paramMaybe "before"
+  uid <- maybe NotFound.get pure =<< ((UUID.fromText =<<) <$> paramMaybe "uid")
+  followingsDtld <- DB.exec $ FollowingDetailed.find pageSize beforeM uid
+  now <- liftIO getCurrentTime
+  sendHtmlPage status200 "Shared Followings" $
+    followingsSharedHtml appEnv now pageSize beforeM followingsDtld
 
 post :: RouteM AppEnv a
 post = do
@@ -44,10 +55,10 @@ post = do
   user <- Session.getOrCreateUser
   let missingUrlError = InputError "url" "Missing parameter: url"
       invalidUrlError = InputError "url" "The URL you entered is not valid."
-  urlP <- maybe (getRecentEntryList (Just missingUrlError)) pure =<< paramMaybe "url"
-  url <- maybe (getRecentEntryList (Just invalidUrlError)) pure (parseInputUrl urlP)
+  urlP <- maybe (list (Just missingUrlError)) pure =<< paramMaybe "url"
+  url <- maybe (list (Just invalidUrlError)) pure (parseInputUrl urlP)
   (fd, eds) <-
-    either (getRecentEntryList . Just) pure
+    either (list . Just) pure
       =<< liftIO (try (RemoteFeed.importFromUrl appEnv url))
   DB.exec (FeedDetailed.save fd)
   DB.exec (EntryDetailed.saveAll eds)
