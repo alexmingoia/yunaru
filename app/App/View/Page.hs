@@ -17,7 +17,7 @@ import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A
 
 appDesc :: Text
-appDesc = "A peaceful news feed. Follow RSS, Twitter, and newsletters. No ads, algorithm, or distractions."
+appDesc = "A peaceful news feed. Follow RSS, Twitter, newsletters, and more. No ads, algorithm, or distractions."
 
 renderPage :: Text -> Text -> Text -> Maybe User -> Html -> BL.ByteString
 renderPage appName title reqPath userM html = renderHtml $ do
@@ -28,7 +28,7 @@ renderPage appName title reqPath userM html = renderHtml $ do
         $ if T.null title || title == appName
           then appName
           else title <> " | " <> appName
-      H.meta ! A.name "description" ! A.value (textValue appDesc)
+      H.meta ! A.name "description" ! A.content (textValue appDesc)
       H.meta ! A.charset "UTF-8"
       H.meta ! A.name "viewport" ! A.content "width=device-width, initial-scale=1"
       H.meta ! A.name "mobile-web-app-capable" ! A.content "yes"
