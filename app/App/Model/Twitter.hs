@@ -79,7 +79,7 @@ authorFromTwUser :: TWT.User -> Author
 authorFromTwUser u =
   (emptyAuthor (userUrl u))
     { authorName = nullifyText (userName u) <|> Just (userScreenName u),
-      authorNote = nullifyText =<< userDescription u,
+      authorNote = nullifyText (expandDescriptionUrls u),
       authorImageUrl = parseAbsoluteUrl =<< userProfileImageURLHttps u
     }
 
@@ -96,7 +96,7 @@ entryFromTwStatus feed author s =
       media = fromMaybe [] ((fmap entityBody) . exeMedia <$> statusExtendedEntities (fromMaybe featuredStatus quotedStatusM))
       imageUrls = catMaybes (parseUrl . TWT.exeMediaUrlHttps <$> (L.filter (matchTwImageType . TWT.exeType) media))
       videoUrls = catMaybes (parseUrl . TWT.exeMediaUrlHttps <$> (L.filter ((== "video") . TWT.exeType) media))
-      summary = withoutRetweetPrefix (withUrls featuredStatus)
+      summary = withoutRetweetPrefix (expandStatusUrls featuredStatus)
       contentM = flip append quotedStatusHtml . wrapInParagraph <$> (nullifyText (withBreakTags summary))
       url = authorUrl featuredAuthor +> ["status", featuredStatusId]
       entry = emptyEntry url (authorUrl featuredAuthor) (feedUrl feed)
@@ -168,7 +168,7 @@ tweetBlockquoteHtml s = decodeUtf8 $ BL.toStrict $ renderHtml $ do
     tweetBlockquoteContentHtml s
 
 tweetBlockquoteContentHtml s =
-  preEscapedToHtml $ withBreakTags $ withoutRetweetPrefix (withUrls s)
+  preEscapedToHtml $ withBreakTags $ withoutRetweetPrefix (expandStatusUrls s)
 
 tweetBlockquoteAuthorHtml s = do
   let u = statusUser s
@@ -193,8 +193,8 @@ withBreakTags txt = T.intercalate "<br/>" (T.lines txt)
 twitterUrl username = fromJust $ parseUrl ("https://twitter.com/" <> username)
 
 -- | Replace status entities with anchor tags.
-withUrls :: TWT.Status -> Text
-withUrls s =
+expandStatusUrls :: TWT.Status -> Text
+expandStatusUrls s =
   let txt = statusText s
       mediaEntity (Entity _ i) = (Nothing, i)
       urlLink txt = (\url -> (renderDisplayUrl url, renderUrl url)) <$> (parseUrl txt)
@@ -203,7 +203,27 @@ withUrls s =
       mediaEntities = mediaEntity <$> maybe [] TWT.enMedia (TWT.statusEntities s)
       urlEntities = urlEntity <$> maybe [] TWT.enURLs (TWT.statusEntities s)
       mentionEntities = mentionEntity <$> maybe [] TWT.enUserMentions (TWT.statusEntities s)
-      entities = L.sortOn (\(_, idx) -> listToMaybe idx) (mediaEntities <> urlEntities <> mentionEntities)
+      entities = L.sortOn (listToMaybe . snd) (mediaEntities <> urlEntities <> mentionEntities)
+      entityAnchor Nothing = ""
+      entityAnchor (Just (label, url)) = "<a href=\"" <> url <> "\">" <> label <> "</a>"
+      linkify t b i ((link, (s : e : [])) : es) = linkify t (b <> (T.drop i (T.take s t)) <> entityAnchor link) e es
+      linkify t b i (_ : es) = linkify t b i es
+      linkify t _ 0 ([]) = t
+      linkify t b i ([]) = b <> T.drop i t
+   in withoutRetweetPrefix $ linkify txt "" 0 entities
+
+-- | Replace status entities with anchor tags.
+expandDescriptionUrls :: TWT.User -> Text
+expandDescriptionUrls s =
+  let txt = fromMaybe "" (userDescription s)
+      mediaEntity (Entity _ i) = (Nothing, i)
+      urlLink txt = (\url -> (renderDisplayUrl url, renderUrl url)) <$> (parseUrl txt)
+      urlEntity (Entity b i) = (urlLink (TWT.ueExpanded b), i)
+      mentionEntity (Entity b i) = (Just ("@" <> TWT.userEntityUserScreenName b, renderUrl (twitterUrl (TWT.userEntityUserScreenName b))), i)
+      mediaEntities = mediaEntity <$> maybe [] TWT.enMedia (TWT.userEntities s)
+      urlEntities = urlEntity <$> maybe [] TWT.enURLs (TWT.userEntities s)
+      mentionEntities = mentionEntity <$> maybe [] TWT.enUserMentions (TWT.userEntities s)
+      entities = L.sortOn (listToMaybe . snd) (mediaEntities <> urlEntities <> mentionEntities)
       entityAnchor Nothing = ""
       entityAnchor (Just (label, url)) = "<a href=\"" <> url <> "\">" <> label <> "</a>"
       linkify t b i ((link, (s : e : [])) : es) = linkify t (b <> (T.drop i (T.take s t)) <> entityAnchor link) e es

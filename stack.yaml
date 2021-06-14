@@ -52,10 +52,13 @@ extra-deps:
   commit: 97e580a2d3407bf707967748a0a9449132476e83
 - git: git://github.com/alexmingoia/twain
   commit: 8a2566aa217b46e934bff09d9873eead7ed5a12c
-- git: https://github.com/himura/twitter-conduit.git
+- git: git://github.com/himura/twitter-conduit
   commit: fe9390577453d36760868c027cbc2c2c4f25c1ed
-- twitter-types-0.10.1@sha256:5ebed648815b96f54b0b1d3e86b3443d8900a86ce3ab885d71fb8c1ba5aacbc0,1568
-- twitter-types-lens-0.10.0@sha256:c9589b49b92e0ca3f2b0472959d5ca9f26589caa8b3af182fcd9697dda570751,974
+- git: git://github.com/alexmingoia/twitter-types
+  commit: 2d219dee5ce61912e02eced3e4f6ad49e6576d84
+  subdirs:
+    - twitter-types
+    - twitter-types-lens
 - resolv-0.1.2.0@sha256:0a9a6dd29706258ae60a5c22aecc140a40743b8f08fc324fd9984e7dfbf3a80d,4548
 - selda-0.5.1.0@sha256:8f4f7afddfb8ba3bcc8677e2a3f0b183ce85eed2c4ed6d7b8b40f057f573bf69,3111
 - base-encoding-0.2.0.0@sha256:aea85215ff6f92e94d559e779e25e18b6722299ed9c4d2bcf6a66fb9808f0812,1563
