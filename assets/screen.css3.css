@@ -678,27 +678,26 @@ button:disabled {
   opacity: 0.55;
 }
 
-button.is-loading {
-  padding-left: 2rem;
-}
-
-button.is-loading::before {
-  position: absolute;
+button.is-loading::before,
+.button.is-loading::before {
+  align-self: center;
+  display: inline-block;
   content: "";
-  width: .75em; /* Size of the spinner */
-  height: .75em; /* Change as desired */
-  top: .75em;
-  left: .5em;
+  width: .75rem; /* Size of the spinner */
+  height: .75rem; /* Change as desired */
+  margin-right: .5em;
   border-radius: 50%;
   border: solid .1875rem var(--button-primary-text); /* Thickness/color of spinner track */
   border-bottom-color: transparent; /* Color of variant spinner piece */
   animation: .8s linear infinite spin; /* speed of spinner */
   transform: translate(-50%, -50%);
   will-change: transform;
+  vertical-align: -4px;
 }
 
 .button.outline.is-loading::before {
   border: solid .1875rem var(--button-outline-text); /* Thickness/color of spinner track */
+  border-bottom-color: transparent; /* Color of variant spinner piece */
 }
 
 /* Alerts */
