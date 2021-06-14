@@ -100,7 +100,7 @@ followingsHtml env now pageSize beforeM userM err urlP followingsDtld = do
       H.a ! A.href "/discover" $ "Discover"
       toHtml (" new feeds." :: Text)
 
-followingsSharedHtml env now pageSize beforeM followingsDtld = do
+followingsSharedHtml env pageSize beforeM followingsDtld = do
   H.h1 "Someone has shared their followings with you."
   H.p $ do
     toHtml $ "They use " <> appName env <> " to read RSS, Twitter, and newsletters in one peaceful feed."

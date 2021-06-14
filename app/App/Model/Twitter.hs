@@ -209,5 +209,5 @@ withUrls s =
       linkify t b i ((link, (s : e : [])) : es) = linkify t (b <> (T.drop i (T.take s t)) <> entityAnchor link) e es
       linkify t b i (_ : es) = linkify t b i es
       linkify t _ 0 ([]) = t
-      linkify _ b _ ([]) = b
+      linkify t b i ([]) = b <> T.drop i t
    in withoutRetweetPrefix $ linkify txt "" 0 entities

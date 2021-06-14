@@ -49,9 +49,8 @@ listShared = do
   beforeM <- (parseDateTime =<<) <$> paramMaybe "before"
   uid <- maybe NotFound.get pure =<< ((parseUuid =<<) <$> paramMaybe "uid")
   followingsDtld <- DB.exec $ FollowingDetailed.find pageSize beforeM uid
-  now <- liftIO getCurrentTime
   sendHtmlPage status200 "Shared Followings" $
-    followingsSharedHtml appEnv now pageSize beforeM followingsDtld
+    followingsSharedHtml appEnv pageSize beforeM followingsDtld
   where
     parseUuid a =
       UUID.fromText a
