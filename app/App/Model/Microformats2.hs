@@ -21,6 +21,7 @@ import Data.Maybe
 import Data.Microformats2.Parser
 import Data.Text as T
 import Data.Text.Encoding
+import Data.Text.Encoding.Error
 import Data.Time.Clock
 import qualified Data.Vector as V
 import Network.URI (parseURI)
@@ -115,7 +116,7 @@ isYoutube url = "youtube" `T.isInfixOf` fromMaybe "" (renderAuthority url)
 
 authorNameFromTags :: [TS.Tag BL.ByteString] -> Maybe Text
 authorNameFromTags ((TS.TagOpen "title" _) : (TS.TagText t) : _) =
-  Just (decodeUtf8 (BL.toStrict t))
+  Just (decodeUtf8With lenientDecode (BL.toStrict t))
 authorNameFromTags (_ : ts) = authorNameFromTags ts
 authorNameFromTags [] = Nothing
 
