@@ -104,8 +104,7 @@ save entry = transaction $ do
                        #entryVideoUrls := literal (entryVideoUrls entry),
                        #entryRebloggedBy := literal (entryRebloggedBy entry),
                        #entryRebloggedAt := literal (entryRebloggedAt entry),
-                       #entryUpdatedAt := literal (entryUpdatedAt entry),
-                       #entryPublishedAt := literal (entryPublishedAt entry)
+                       #entryUpdatedAt := literal (entryUpdatedAt entry)
                      ]
         )
   return entry
