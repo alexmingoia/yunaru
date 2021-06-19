@@ -38,15 +38,20 @@ renderPage appName title reqPath userM html = renderHtml $ do
         ! A.rel "stylesheet"
         ! A.href "/assets/screen.min.css"
       H.link
+        ! A.rel "mask-icon"
+        ! A.href "/assets/sumi.news.svg"
+      H.link
         ! A.rel "icon"
         ! A.type_ "image/png"
-        ! A.sizes "512x512"
-        ! A.href "/assets/sumi-news-512x512.png"
+        ! A.href "/assets/sumi.news-favicon-512x512.png"
       H.link
         ! A.rel "apple-touch-icon"
         ! A.type_ "image/png"
         ! A.sizes "512x512"
-        ! A.href "/assets/sumi-news-512x512.png"
+        ! A.href "/assets/sumi.news-512x512.png"
+      H.meta ! A.name "twitter:card" ! A.content "summary"
+      H.meta ! A.name "twitter:creator" ! A.content "@tofukidxyz"
+      H.meta ! A.name "og:image" ! A.content "/assets/sumi.news-512x512.png"
       H.script
         ! A.async mempty
         ! A.src "/assets/progressive-enhancements.js"
@@ -62,23 +67,23 @@ renderBody' :: Text -> Text -> Maybe User -> Html -> BL.ByteString
 renderBody' appName reqPath userM html =
   renderHtml $ renderBody appName reqPath userM html
 
-pageHeader appName reqPath userM =
+pageHeader appName reqPath userM = do
   H.header $ do
     H.nav $ do
       H.a
         ! A.href "/"
         ! A.title (textValue appName)
-        ! A.class_ "logo"
-        $ toHtml appName
+        ! A.class_
+          ( if reqPath == "/" && isJust userM
+              then "logo icon-left is-active"
+              else "logo icon-left"
+          )
+        $ do
+          Icon.logo
+          toHtml appName
       H.ul $ do
         let followingsHref = "/followings"
             signInHref = "/sessions/new"
-        H.li
-          $ H.a
-            ! A.href "/"
-            ! isActive reqPath "/"
-            ! A.title "News Feed"
-          $ Icon.newspaper ! H.customAttribute "aria-label" "News Feed"
         H.li
           $ H.a
             ! A.href (textValue followingsHref)

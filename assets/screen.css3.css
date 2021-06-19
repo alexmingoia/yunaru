@@ -173,6 +173,10 @@ a.logo {
   margin-left: -.5rem;
 }
 
+a.logo .icon {
+  margin-top: 1px;
+}
+
 body > header nav li:last-child .button {
   font-size: .8125rem;
   margin-left: 0.625rem;
@@ -405,9 +409,8 @@ a:focus, button.link:focus {
   background-color: var(--link-background-hover);
 }
 
-a:active, button.link:active, a.is-active {
+a:active, button.link:active {
   color: var(--link-active);
-  text-decoration: underline;
 }
 
 p a,
