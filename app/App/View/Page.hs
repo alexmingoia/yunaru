@@ -17,17 +17,17 @@ import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A
 
 appDesc :: Text
-appDesc = "A peaceful news feed. Follow RSS, Twitter, newsletters, and more. No ads, algorithm, or distractions."
+appDesc = "A peaceful news feed. Follow RSS, Twitter, newsletters, and more. No ads, algorithms, or distractions."
 
 renderPage :: Text -> Text -> Text -> Maybe User -> Html -> BL.ByteString
 renderPage appName title reqPath userM html = renderHtml $ do
-  H.docTypeHtml $ do
-    H.head $ do
-      H.title
-        $ toHtml
-        $ if T.null title || title == appName
+  let pageTitle =
+        if T.null title || title == appName
           then appName
           else title <> " | " <> appName
+  H.docTypeHtml $ do
+    H.head $ do
+      H.title $ toHtml pageTitle
       H.meta ! A.name "description" ! A.content (textValue appDesc)
       H.meta ! A.charset "UTF-8"
       H.meta ! A.name "viewport" ! A.content "width=device-width, initial-scale=1"
@@ -50,6 +50,9 @@ renderPage appName title reqPath userM html = renderHtml $ do
         ! A.sizes "512x512"
         ! A.href "/assets/sumi.news-512x512.png"
       H.meta ! A.name "twitter:card" ! A.content "summary"
+      H.meta ! A.name "twitter:title" ! A.content (textValue pageTitle)
+      H.meta ! A.name "twitter:description" ! A.content (textValue appDesc)
+      H.meta ! A.name "twitter:image" ! A.content "/assets/sumi.news-512x512.png"
       H.meta ! A.name "twitter:creator" ! A.content "@tofukidxyz"
       H.meta ! A.name "og:image" ! A.content "/assets/sumi.news-512x512.png"
       H.script
