@@ -168,14 +168,15 @@ discoverHtml env discoverUrl categoryM feedsDtld = do
 feedSnippetHtml env feedDtld = do
   let feed = feedInfo feedDtld
       author = feedAuthor feedDtld
+      href = if feedFormat feed == EmailFeedFormat then authorUrl author else localFeedUrl feed
   H.div
     ! A.class_ "h-cite h-feed"
-    ! customAttribute "data-href" (urlValue (localFeedUrl feed))
+    ! customAttribute "data-href" (urlValue href)
     ! A.onclick "event.preventDefault(); window.location.href = event.currentTarget.getAttribute('data-href');"
     $ do
       H.div ! A.class_ "byline" $ do
         whenJust (Image.cacheUrl env 128 128 True <$> authorImageUrl author) $ \imageUrl -> do
-          H.a ! A.href (urlValue (localFeedUrl feed)) ! A.class_ "image" $ do
+          H.a ! A.href (urlValue href) ! A.class_ "image" $ do
             H.img
               ! A.class_ "u-photo"
               ! A.src (urlValue imageUrl)
@@ -183,7 +184,7 @@ feedSnippetHtml env feedDtld = do
               ! A.height "32"
               ! customAttribute "aria-hidden" "true"
               ! A.alt (textValue (feedDisplayName feedDtld))
-        H.a ! A.href (urlValue (localFeedUrl feed)) ! A.class_ "p-name" $
+        H.a ! A.href (urlValue href) ! A.class_ "p-name" $
           toHtml (feedDisplayName feedDtld)
       whenJust (feedSummary feed <|> authorNote author) $ \summary -> do
         H.p ! A.class_ "p-summary" $ preEscapedToHtml summary
