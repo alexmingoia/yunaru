@@ -9,8 +9,11 @@ import App.Model.Database as DB
 import App.Model.EntryDetailed as EntryDetailed
 import App.Model.Env
 import App.Model.FeedDetailed as FeedDetailed
+import App.Model.User
 import App.View.Feed
 import App.View.Language
+import Control.Monad.Extra
+import Data.Text as T
 import Data.Time.Clock
 import Network.HTTP.Types
 import Web.Twain
@@ -25,6 +28,11 @@ get = do
   userM <- Session.getUser
   feedDtld <- maybe NotFound.get pure =<< DB.exec (FeedDetailed.findOne url userM)
   let feed = feedInfo feedDtld
+  when (feedFormat feed == EmailFeedFormat) $ do
+    case userNewsletterId =<< userM of
+      Nothing -> NotFound.get
+      Just id -> do
+        when (not (id `T.isPrefixOf` renderUrl (feedUrl feed))) $ NotFound.get
   beforeM <- (parseDateTime =<<) <$> paramMaybe "before"
   entriesDtld <- DB.exec (EntryDetailed.find pageSize beforeM (feedUrl feed))
   now <- liftIO getCurrentTime
