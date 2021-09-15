@@ -10,17 +10,19 @@ import App.Model.Microformats2 as MF2
 import App.Model.User as User
 import App.View.Language
 import Control.Exception (try)
-import Control.Monad (when)
+import Control.Monad (void, when)
 import Data.Either.Combinators (rightToMaybe)
 import Data.Maybe
 import Data.Time.Clock
 import Data.UUID.V4 as UUIDv4
+import Network.Wai.Parse (defaultParseRequestBodyOptions, setMaxRequestParmsSize)
 import Web.Twain
 
 postNewsletterWebhook :: RouteM AppEnv a
 postNewsletterWebhook = do
   appEnv <- env
   let secret = appNewsletterWebhookSecret appEnv
+  void $ parseBody (setMaxRequestParmsSize 10000000 defaultParseRequestBodyOptions)
   secretParam <- maybe respondError pure =<< paramMaybe "secret"
   senderEmail <-
     maybe respondError pure =<< (parseInputUrl =<<)

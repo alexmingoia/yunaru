@@ -47,6 +47,17 @@ packages:
   original:
     hackage: base58-bytestring-0.1.0@sha256:a1da72ee89d5450bac1c792d9fcbe95ed7154ab7246f2172b57bd4fd9b5eab79,1913
 - completed:
+    name: twain
+    version: 1.0.1.0
+    git: git://github.com/alexmingoia/twain
+    pantry-tree:
+      size: 697
+      sha256: 52c726a78956d9c33ad0ae6d774c5ec7488d3baa28f53b196ea1143fd3634bcb
+    commit: b250e39a7ad2efd29a52115578f72f89bcb32da5
+  original:
+    git: git://github.com/alexmingoia/twain
+    commit: b250e39a7ad2efd29a52115578f72f89bcb32da5
+- completed:
     name: feed
     version: 1.3.2.0
     git: git://github.com/alexmingoia/feed
@@ -68,17 +79,6 @@ packages:
   original:
     git: git://github.com/alexmingoia/webmention
     commit: 97e580a2d3407bf707967748a0a9449132476e83
-- completed:
-    name: twain
-    version: 1.0.0.0
-    git: git://github.com/alexmingoia/twain
-    pantry-tree:
-      size: 696
-      sha256: b85ad90acb2dc4ac05f41150cac2b85eef840b6f3aef4d52993eeb2efa63fbe2
-    commit: 8a2566aa217b46e934bff09d9873eead7ed5a12c
-  original:
-    git: git://github.com/alexmingoia/twain
-    commit: 8a2566aa217b46e934bff09d9873eead7ed5a12c
 - completed:
     name: twitter-conduit
     version: 0.5.1
